@@ -6,10 +6,19 @@
 {% block body_class %}template-blogindexpage{% endblock %}
 
 {% block content %}
-    <h1>{{ page.title }}</h1>
+<div class="jumbotron" style="text-align:center">
+  <h1 class="display-3">{{page.title}}</h1>
+  <p class="lead"> Welcome to the Garden on a Seedling blog, you can find out all about my growing journey and maybe
+      <br/>
+      get some tips to help with yours as well. Join me on my failures, successes and lessons learnt along the way...</p>
+  <hr class="my-4">
+  <p class="lead">
+      {{ page.intro|richtext }}
+  </p>
+</div>
 
-    <div class="intro">{{ page.intro|richtext }}</div>
 
+<div style="text-align:center">
 {% for post in blogpages %}
     {% with post=post.specific %}
         <h2><a href="{% pageurl post %}">{{ post.title }}</a></h2>
@@ -20,7 +29,11 @@
 
         <p>{{ post.intro }}</p>
         {{ post.body|richtext }}
+        {{ post.date }}
+
     {% endwith %}
+    <hr class="my-4">
 {% endfor %}
+<div/>
 
 {% endblock %}
