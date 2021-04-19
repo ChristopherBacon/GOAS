@@ -2,7 +2,6 @@
 
 {% load wagtailcore_tags wagtailimages_tags %}
 
-
 {% block body_class %}template-blogindexpage{% endblock %}
 
 {% block content %}
@@ -17,14 +16,13 @@
   </p>
 </div>
 
-
 <div style="text-align:center">
 {% for post in blogpages %}
     {% with post=post.specific %}
         <h2><a href="{% pageurl post %}">{{ post.title }}</a></h2>
 
         {% with post.main_image as main_image %}
-            {% if main_image %}{% image main_image fill-160x100 %}{% endif %}
+            {% if main_image %}{% image main_image fill-320x200 %}{% endif %}
         {% endwith %}
 
         <p>{{ post.intro }}</p>
@@ -34,6 +32,33 @@
     {% endwith %}
     <hr class="my-4">
 {% endfor %}
-<div/>
+</div>
 
+
+<div class="container">
+            {%  for post in blogpages  %}
+                {% with post=post.specific %}
+                    {% if forloop.counter0|divisibleby:3 %} <div class="row text-center"> {%  endif %}
+                      <div class="col-md-4" onclick="window.location.href='{% pageurl post %}'" style="cursor: pointer">
+                          <div class="card">
+                              {% with post.main_image as main_image %}
+                                        {% if main_image %}{% image main_image fill-320x200 class="card-img-top" %}{% endif %}
+                                    {% endwith %}
+
+                              <div class="card-content">
+                                  <br>
+                                  <h4>{{ post.title }}</h4>
+                                  <hr>
+                                  <p>{{ post.body|richtext}}</p>
+                                  <p>{{ post.date }}</p>
+                                  <small class="text-muted">9 mins</small>
+                                  <br>
+
+                              </div><!-- card content -->
+                          </div><!-- card -->
+                      </div><!-- col-md-4 -->
+                    {%  if forloop.counter|divisibleby:3 or forloop.last %}</div><!-- row closing --><hr>{%  endif %}
+                {% endwith %}
+            {%  endfor %}
+         </div><!-- container -->
 {% endblock %}
