@@ -16,23 +16,7 @@
   </p>
 </div>
 
-<div style="text-align:center">
-{% for post in blogpages %}
-    {% with post=post.specific %}
-        <h2><a href="{% pageurl post %}">{{ post.title }}</a></h2>
 
-        {% with post.main_image as main_image %}
-            {% if main_image %}{% image main_image fill-320x200 %}{% endif %}
-        {% endwith %}
-
-        <p>{{ post.intro }}</p>
-        {{ post.body|richtext }}
-        {{ post.date }}
-
-    {% endwith %}
-    <hr class="my-4">
-{% endfor %}
-</div>
 
 
 <div class="container">
