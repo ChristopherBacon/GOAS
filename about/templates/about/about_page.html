@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+{% extends "base.html" %}
+
+{% load wagtailcore_tags wagtailimages_tags %}
+
+{% block body_class %}template-aboutpage{% endblock %}
+
+{% block content %}
+{{ page.intro }}
+{% include_block page.body %}
+{% endblock %}
+
+
+</html>
