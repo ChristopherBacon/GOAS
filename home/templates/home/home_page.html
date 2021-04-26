@@ -1,30 +1,20 @@
 {% extends "base.html" %}
-{% load static %}
+
+{% load wagtailcore_tags %}
 
 {% block body_class %}template-homepage{% endblock %}
 
-{% block extra_css %}
-
-{% extends blo/base.html %}
-{% load static wagtailcore_tags wagtailimages_tags %}
-
 {% block content %}
+
+<div class="jumbotron">
+    <center>
+  <h1 class="display-3">{{ page.header|richtext }}</h1>
+  <p class="lead text-warning">{{ page.body|richtext }}</p>
+  <hr class="my-4">
+  <p class="lead">
+    <a class="btn btn-primary btn-lg" href="/blog/" role="button">Blog</a>
+  </p>
+    </center>
+</div>
 {% endblock %}
 
-
-
-
-{% comment %}
-Delete the line below if you're just getting started and want to remove the welcome screen!
-{% endcomment %}
-<link rel="stylesheet" href="{% static 'css/welcome_page.css' %}">
-{% endblock extra_css %}
-
-{% block content %}
-
-{% comment %}
-Delete the line below if you're just getting started and want to remove the welcome screen!
-{% endcomment %}
-{% include 'home/welcome_page.html' %}
-
-{% endblock content %}
