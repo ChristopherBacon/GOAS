@@ -60,8 +60,9 @@ class BlogPage(Page):
             return None
 
     search_fields = Page.search_fields + [
-        index.SearchField('intro'),
-        index.SearchField('body'),
+        index.SearchField('tags'),
+        index.SearchField('intro', partial_match=True),
+        index.SearchField('body', partial_match=True),
     ]
 
     content_panels = Page.content_panels + [
