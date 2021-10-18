@@ -1,4 +1,4 @@
-from daily_artist_flash.queries import select_queries
+# from daily_artist_flash.queries import select_queries
 import logging
 from datetime import datetime
 import snowflake.connector
@@ -16,6 +16,7 @@ track_title = 'Drive (feat. Wes Nelson)'
 week_prior = '2021-09-06'
 week = '2021-09-13'
 
+
 def fetch_data_as_df(cur, sql):
     cur.execute(sql)
     rows = 0
@@ -31,7 +32,7 @@ def fetch_data_as_df(cur, sql):
 
         df = df.append(temp)
 
-    #logging.info('%s rows extracted from Snowflake' % (rows))
+    # logging.info('%s rows extracted from Snowflake' % (rows))
 
     return df
 
@@ -52,11 +53,6 @@ def connect_to_snowflake():
     DATABASE = os.getenv("DATABASE")
     SCHEMA = os.getenv("SCHEMA")
 
-
-    # ctx = snowflake.connector.connect(user='chris.bacon@warnerchappellpm.com', password='Starwars128!',
-    #                                   authenticator='https://wmg.okta.com', account='wmg-datalab',
-    #                                   warehouse='ATLANTIC_UK_SANDBOX_WH_M', database='DF_PROD_DAP_MISC', schema='DAP')
-
     ctx = snowflake.connector.connect(user=USER_SNOW, password=PASSWORD,
                                       authenticator=AUTHENTICATOR, account=ACCOUNT,
                                       warehouse=WAREHOUSE, database=DATABASE, schema=SCHEMA)
@@ -65,27 +61,26 @@ def connect_to_snowflake():
 
     return cursor
 
+# cursor = connect_to_snowflake()
+#
+# hot_hits_uk, todays_hits_apple_uk, todays_top_hits_spotify, spotify_daily_top_200_gb, query_total_streams_dsp = select_queries(
+#     2021, 9, 13, 'Clean Bandit', 'Drive (feat. Wes Nelson)')
 
-hot_hits_uk, todays_hits_apple_uk, todays_top_hits_spotify, spotify_daily_top_200_gb, query_total_streams_dsp = select_queries(
-    2021, 9, 13, 'Clean Bandit', 'Drive (feat. Wes Nelson)')
 
-cursor = connect_to_snowflake()
-
-
-def get_query_dfs():
-    hot_hits_uk_df = fetch_data_as_df(cursor, hot_hits_uk)
-    todays_hits_apple_uk_df = fetch_data_as_df(cursor, todays_hits_apple_uk)
-    todays_top_hits_spotify_df = fetch_data_as_df(cursor, todays_top_hits_spotify)
-    spotify_daily_top_200_gb_df = fetch_data_as_df(cursor, spotify_daily_top_200_gb)
-    query_total_streams_dsp_df = fetch_data_as_df(cursor, query_total_streams_dsp)
+def get_query_dfs(selected_queries, cursor):
+    hot_hits_uk_df = fetch_data_as_df(cursor, selected_queries[0])
+    todays_hits_apple_uk_df = fetch_data_as_df(cursor, selected_queries[1])
+    todays_top_hits_spotify_df = fetch_data_as_df(cursor, selected_queries[2])
+    spotify_daily_top_200_gb_df = fetch_data_as_df(cursor, selected_queries[3])
+    query_total_streams_dsp_df = fetch_data_as_df(cursor, selected_queries[4])
 
     return hot_hits_uk_df, todays_hits_apple_uk_df, todays_top_hits_spotify_df, spotify_daily_top_200_gb_df, query_total_streams_dsp_df
 
 
-hot_hits_uk_df, todays_hits_apple_uk_df, todays_top_hits_spotify_df, spotify_daily_top_200_gb_df, query_total_streams_dsp_df = get_query_dfs()
+# hot_hits_uk_df, todays_hits_apple_uk_df, todays_top_hits_spotify_df, spotify_daily_top_200_gb_df, query_total_streams_dsp_df = get_query_dfs()
 
 
-def week_change_calculator(df_week, df_week_prior):
+def week_change_calculator(df_week_prior, df_week):
     if (df_week != 'N/A') & (df_week_prior != 'N/A'):
         df_week_prior = df_week - df_week_prior
     elif (df_week == 'N/A') & (df_week_prior != 'N/A'):
@@ -102,15 +97,18 @@ def week_change_calculator(df_week, df_week_prior):
 
 
 def playlist_data_selector(df, week_prior, week, playlist):
-    df['DATE_KEY'] = df['DATE_KEY'].astype(str)
     try:
-        df = df.loc[(df['DATE_KEY'] == week_prior) & (df['PLAYLIST_NAME'] == playlist)]
-        df_week_prior = df.iloc[0,4]
+        df['DATE_KEY'] = df['DATE_KEY'].astype(str)
+    except Exception:
+        pass
+    try:
+        df_week_prior = df.loc[(df['DATE_KEY'] == week_prior) & (df['PLAYLIST_NAME'] == playlist)]
+        df_week_prior = df_week_prior.iloc[0, 4]
     except Exception:
         df_week_prior = 'N/A'
     try:
-        df = df.loc[(df['DATE_KEY'] == week) & (df['PLAYLIST_NAME'] == playlist)]
-        df_week = df.iloc[0, 4]
+        df_week = df.loc[(df['DATE_KEY'] == week) & (df['PLAYLIST_NAME'] == playlist)]
+        df_week = df_week.iloc[0, 4]
     except Exception:
         df_week = 'N/A'
 
@@ -119,15 +117,18 @@ def playlist_data_selector(df, week_prior, week, playlist):
     return df_week_prior, df_week
 
 def spotify_daily_200_gb_selector(df, week_prior, week, playlist):
-    df['DATE_KEY'] = df['DATE_KEY'].astype(str)
     try:
-        df = df.loc[(df['DATE_KEY'] == week_prior) & (df['CHART_NAME'] == playlist)]
-        df_week_prior = df.iloc[0,2]
+        df['DATE_KEY'] = df['DATE_KEY'].astype(str)
+    except Exception:
+        pass
+    try:
+        df_week_prior = df.loc[(df['DATE_KEY'] == week_prior) & (df['CHART_NAME'] == playlist)]
+        df_week_prior = df_week_prior.iloc[0,2]
     except Exception:
         df_week_prior = 'N/A'
     try:
-        df = df.loc[(df['DATE_KEY'] == week) & (df['CHART_NAME'] == playlist)]
-        df_week = df.iloc[0,2]
+        df_week = df.loc[(df['DATE_KEY'] == week) & (df['CHART_NAME'] == playlist)]
+        df_week = df_week.iloc[0,2]
     except Exception:
         df_week = 'N/A'
 
@@ -136,7 +137,10 @@ def spotify_daily_200_gb_selector(df, week_prior, week, playlist):
     return df_week_prior, df_week
 
 def youtube_streams_summed(df, week_prior, week):
-    df['DATE_KEY'] = df['DATE_KEY'].astype(str)
+    try:
+        df['DATE_KEY'] = df['DATE_KEY'].astype(str)
+    except Exception:
+        pass
     try:
         df_week_prior = df.loc[(df['DATE_KEY'] == week_prior) & (df['CUSTOMER_NAME'] == 'YouTube')]
         df_week_prior = df_week_prior['SUMMED_STREAMS'].sum()
@@ -153,15 +157,15 @@ def youtube_streams_summed(df, week_prior, week):
     return df_week_prior, df_week
 
 
-def create_row():
+def create_row(dfs, week_prior, week):
     data_row = []
     week_selector = [0,1]
     data_point_gatherer = [
-        playlist_data_selector(hot_hits_uk_df, week_prior, week, 'Hot Hits UK'),
-        playlist_data_selector(hot_hits_uk_df, week_prior, week, 'Today\'s Top Hits'),
-        playlist_data_selector(hot_hits_uk_df, week_prior, week, 'Today\'s Hits'),
-        spotify_daily_200_gb_selector(spotify_daily_top_200_gb_df, week_prior, week, 'Top 200'),
-        youtube_streams_summed(query_total_streams_dsp_df, week_prior, week)
+        playlist_data_selector(dfs[0], week_prior, week, "Hot Hits UK"),
+        playlist_data_selector(dfs[1], week_prior, week, "Today's Top Hits"),
+        playlist_data_selector(dfs[2], week_prior, week, "Today's Hits"),
+        spotify_daily_200_gb_selector(dfs[3], week_prior, week, "Top 200"),
+        youtube_streams_summed(dfs[4], week_prior, week)
     ]
 
     for x in data_point_gatherer:
@@ -170,7 +174,7 @@ def create_row():
 
     return data_row
 
-data_rows = create_row()
+# data_rows = create_row()
 
 def data_row_dict(row_data):
     data_row = {"Hot Hits UK (Spotify)":{"week prior change": row_data[0], "current week":row_data[1]},
@@ -181,7 +185,7 @@ def data_row_dict(row_data):
     }
     return data_row
 
-data_row = data_row_dict(data_rows)
+# data_row = data_row_dict(data_rows)
 
 def create_daily_flash():
 
@@ -195,21 +199,21 @@ def create_daily_flash():
 
     return daily_flash
 
-daily_flash = create_daily_flash()
+# daily_flash = create_daily_flash()
+#
+# print(daily_flash)
 
-print(daily_flash)
 
-
-def add_row_to_daily_flash(daily_flash, artist, track_title):
+def add_row_to_daily_flash(data_row, daily_flash, artist, track_title):
     artist_track = artist + ' - ' + track_title
     daily_flash = daily_flash.append(pd.DataFrame.from_dict(data_row).unstack().rename(f"{artist_track}"))
 
     return daily_flash
 
-daily_flash = add_row_to_daily_flash(daily_flash, artist, track_title)
+# daily_flash = add_row_to_daily_flash(daily_flash, artist, track_title)
 
 
 
 
 #save to df
-print(daily_flash)
+# print(daily_flash)
