@@ -99,6 +99,36 @@ def select_queries(year, month, day, artist: str, track_title: str):
     
     """
 
+    spotify_top_200_global = f"""
+    
+        SELECT w.DATE_KEY
+        , w.TITLE
+        , p.ARTIST_DISPLAY_NAME
+        , w.CURRENT_POSITION
+        , c.CHART_NAME
+        , c.CHART_KEY
+        , cu.CUSTOMER_NAME
+        , dc.COUNTRY_CODE
+        , dc.COUNTRY_NAME
+        
+    
+    
+    from DF_PROD_DAP_MISC.DAP.FACT_CHARTS_DAILY w
+    inner join DF_PROD_DAP_MISC.DAP.DIM_CHART c on c.CHART_KEY = w.CHART_KEY
+    inner join DF_PROD_DAP_MISC.DAP.DIM_COUNTRY dc on dc.COUNTRY_KEY = w.COUNTRY_KEY
+    inner join DF_PROD_DAP_MISC.DAP.DIM_CUSTOMER cu on cu.CUSTOMER_KEY = w.CUSTOMER_KEY
+    inner join DF_PROD_DAP_MISC.DAP.DIM_PRODUCT p on p.PRODUCT_KEY = w.PRODUCT_KEY
+    
+    
+    WHERE cu.CUSTOMER_NAME = 'Spotify'
+    and c.CHART_NAME = 'Top 200'
+    and dc.COUNTRY_CODE = 'WW'
+    and (w.DATE_KEY = '{date - week_delta}' or w.DATE_KEY = '{date}' )
+    and p.ARTIST_DISPLAY_NAME LIKE '%{artist}%'
+    and w.TITLE LIKE '{track_title}'
+    
+    """
+
     query_total_streams_dsp = f"""
 
     SELECT s.DATE_KEY      
@@ -119,4 +149,4 @@ def select_queries(year, month, day, artist: str, track_title: str):
 
     """
 
-    return hot_hits_uk, todays_hits_apple_uk, todays_top_hits_spotify, spotify_daily_top_200_gb, query_total_streams_dsp
+    return hot_hits_uk, todays_hits_apple_uk, todays_top_hits_spotify, spotify_daily_top_200_gb, query_total_streams_dsp, spotify_top_200_global

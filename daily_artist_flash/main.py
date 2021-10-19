@@ -21,7 +21,7 @@ def main():
 
     # artists & tracks to check
     artist_track_dict = {
-        # 'Clean Bandit x Topic': 'Drive (feat. Wes Nelson)',
+        'Clean Bandit x Topic': 'Drive (feat. Wes Nelson)',
         'Ed Sheeran': 'Bad Habits'
     }
     week_prior = '2021-09-06'
@@ -34,11 +34,12 @@ def main():
         data_row = data_row_dict(data_rows)
         daily_flash = add_row_to_daily_flash(data_row, daily_flash, k, v)
 
-
-
     print(daily_flash)
+    title  = f"daily_flash_{week}.xlsx"
+    daily_flash.to_csv(title)
 
 
 
 if __name__ == "__main__":
     main()
+

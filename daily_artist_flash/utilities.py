@@ -73,8 +73,9 @@ def get_query_dfs(selected_queries, cursor):
     todays_top_hits_spotify_df = fetch_data_as_df(cursor, selected_queries[2])
     spotify_daily_top_200_gb_df = fetch_data_as_df(cursor, selected_queries[3])
     query_total_streams_dsp_df = fetch_data_as_df(cursor, selected_queries[4])
+    spotify_daily_top_200_ww_df = fetch_data_as_df(cursor, selected_queries[5])
 
-    return hot_hits_uk_df, todays_hits_apple_uk_df, todays_top_hits_spotify_df, spotify_daily_top_200_gb_df, query_total_streams_dsp_df
+    return hot_hits_uk_df, todays_hits_apple_uk_df, todays_top_hits_spotify_df, spotify_daily_top_200_gb_df, query_total_streams_dsp_df, spotify_daily_top_200_ww_df
 
 
 # hot_hits_uk_df, todays_hits_apple_uk_df, todays_top_hits_spotify_df, spotify_daily_top_200_gb_df, query_total_streams_dsp_df = get_query_dfs()
@@ -207,6 +208,27 @@ def youtube_streams_summed(df, week_prior, week):
 
     return df_week_prior, df_week
 
+def spotify_top_200_global(df, week_prior, week, playlist):
+    try:
+        df['DATE_KEY'] = df['DATE_KEY'].astype(str)
+    except:
+        pass
+    try:
+        df_week_prior = df.loc[(df['DATE_KEY'] == week_prior) & (df['CHART_NAME'] == playlist)]
+        df_week_prior = df_week_prior.iloc[0,3]
+    except:
+        df_week_prior = 'N/A'
+    try:
+        df_week = df.loc[(df['DATE_KEY'] == week) & (df['CHART_NAME'] == playlist)]
+        df_week = df_week.iloc[0,3]
+    except:
+        df_week = 'N/A'
+
+    df_week_prior = week_change_calculator(df_week, df_week_prior)
+
+    return df_week_prior, df_week
+
+
 
 def create_row(dfs, week_prior, week):
     data_row = []
@@ -216,7 +238,8 @@ def create_row(dfs, week_prior, week):
         todays_top_hits(dfs[1], week_prior, week, "Todays Hits"),
         todays_hits(dfs[2], week_prior, week, "Todays Top Hits"),
         spotify_daily_200_gb_selector(dfs[3], week_prior, week, "Top 200"),
-        youtube_streams_summed(dfs[4], week_prior, week)
+        youtube_streams_summed(dfs[4], week_prior, week),
+        spotify_top_200_global(dfs[5], week_prior, week, "Top 200")
     ]
 
     for x in data_point_gatherer:
@@ -232,7 +255,8 @@ def data_row_dict(row_data):
                 "Today\'s Top Hits (Spotify)":{"week prior change":row_data[2], "current week":row_data[3]},
                 "Today\'s Hits (Apple)": {"week prior change":row_data[4], "current week":row_data[5]},
                 "Spotify Daily Top 200 (GB)":{"week prior change":row_data[6], "current week":row_data[7]},
-                "Youtube Views (Global)":{"week prior change":row_data[8], "current week":row_data[9]}
+                "Youtube Views (Global)":{"week prior change":row_data[8], "current week":row_data[9]},
+                "Spotify Daily Top 200 (Global)": {"week prior change": row_data[10], "current week": row_data[11]}
     }
     return data_row
 
@@ -243,7 +267,7 @@ def create_daily_flash():
     index = pd.Index([], name='artist - song')
 
     columns = pd.MultiIndex.from_product([['Hot Hits UK (Spotify)','Today\'s Top Hits (Spotify)','Today\'s Hits (Apple)',
-                                           'Spotify Daily Top 200 (GB)', 'Youtube Views (Global)'],
+                                           'Spotify Daily Top 200 (GB)', 'Youtube Views (Global)', 'Spotify Daily Top 200 (Global)'],
                                         ['week prior change', 'current week']], names=['source','week'])
 
     daily_flash = pd.DataFrame(columns= columns, index=index)
