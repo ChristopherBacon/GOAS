@@ -24,11 +24,11 @@ def main():
         'Clean Bandit x Topic': 'Drive (feat. Wes Nelson)',
         'Ed Sheeran': 'Bad Habits'
     }
-    week_prior = '2021-09-06'
-    week = '2021-09-13'
+    week_prior = '2021-09-24'
+    week = '2021-09-17'
 
     for k, v in artist_track_dict.items():
-        selected_queries = select_queries(2021, 9, 13, k, v)
+        selected_queries = select_queries(2021, 9, 24, k, v)
         query_dfs = get_query_dfs(selected_queries, cursor)
         data_rows = create_row(query_dfs, week_prior, week)
         data_row = data_row_dict(data_rows)
