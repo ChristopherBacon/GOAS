@@ -18,7 +18,6 @@ def select_queries(year, month, day, artist: str, track_title: str):
         , tm.TRACK_POSITION
         , tm.COUNTRY_CODE
                 
-    
     FROM DF_PROD_DAP_MISC.DAP.FACT_AUDIO_PLAYLIST_TRACK_METRICS tm   
             inner join DF_PROD_DAP_MISC.DAP.DIM_PLAYLIST p on p.PLAYLIST_KEY = tm.PLAYLIST_KEY
             inner join DF_PROD_DAP_MISC.DAP.DIM_PRODUCT pr on pr.PRODUCT_KEY = tm.PRODUCT_KEY
@@ -39,7 +38,6 @@ def select_queries(year, month, day, artist: str, track_title: str):
        , tm.TRACK_POSITION
        , tm.COUNTRY_CODE
             
-
     FROM DF_PROD_DAP_MISC.DAP.FACT_AUDIO_PLAYLIST_TRACK_METRICS tm   
         inner join DF_PROD_DAP_MISC.DAP.DIM_PLAYLIST p on p.PLAYLIST_KEY = tm.PLAYLIST_KEY
         inner join DF_PROD_DAP_MISC.DAP.DIM_PRODUCT pr on pr.PRODUCT_KEY = tm.PRODUCT_KEY
@@ -59,7 +57,6 @@ def select_queries(year, month, day, artist: str, track_title: str):
        , tm.CUSTOMER_TRACK_TITLE
        , tm.TRACK_POSITION
        , tm.COUNTRY_CODE
-
 
     FROM DF_PROD_DAP_MISC.DAP.FACT_AUDIO_PLAYLIST_TRACK_METRICS tm   
         inner join DF_PROD_DAP_MISC.DAP.DIM_PLAYLIST p on p.PLAYLIST_KEY = tm.PLAYLIST_KEY
@@ -82,14 +79,12 @@ def select_queries(year, month, day, artist: str, track_title: str):
        , cn.COUNTRY_CODE
        , c.CUSTOMER_NAME
     
-    
     FROM DF_PROD_DAP_MISC.DAP.FACT_CHARTS_DAILY fc
         inner join DF_PROD_DAP_MISC.DAP.DIM_PRODUCT pr on pr.PRODUCT_KEY = fc.PRODUCT_KEY
         inner join DF_PROD_DAP_MISC.DAP.DIM_CHART ch on ch.CHART_KEY = fc.CHART_KEY
         inner join DF_PROD_DAP_MISC.DAP.DIM_CUSTOMER c on c.CUSTOMER_KEY = fc.CUSTOMER_KEY
         inner join DF_PROD_DAP_MISC.DAP.DIM_COUNTRY cn on cn.COUNTRY_KEY = fc.COUNTRY_KEY
 
-    
     WHERE  (fc.DATE_KEY = '{date - week_delta}' or fc.DATE_KEY = '{date}')
         and pr.ARTIST_DISPLAY_NAME LIKE '%{artist}%'
         and fc.TITLE LIKE '{track_title}'
@@ -111,14 +106,11 @@ def select_queries(year, month, day, artist: str, track_title: str):
         , dc.COUNTRY_CODE
         , dc.COUNTRY_NAME
         
-    
-    
     from DF_PROD_DAP_MISC.DAP.FACT_CHARTS_DAILY w
     inner join DF_PROD_DAP_MISC.DAP.DIM_CHART c on c.CHART_KEY = w.CHART_KEY
     inner join DF_PROD_DAP_MISC.DAP.DIM_COUNTRY dc on dc.COUNTRY_KEY = w.COUNTRY_KEY
     inner join DF_PROD_DAP_MISC.DAP.DIM_CUSTOMER cu on cu.CUSTOMER_KEY = w.CUSTOMER_KEY
     inner join DF_PROD_DAP_MISC.DAP.DIM_PRODUCT p on p.PRODUCT_KEY = w.PRODUCT_KEY
-    
     
     WHERE cu.CUSTOMER_NAME = 'Spotify'
     and c.CHART_NAME = 'Top 200'
@@ -127,6 +119,34 @@ def select_queries(year, month, day, artist: str, track_title: str):
     and p.ARTIST_DISPLAY_NAME LIKE '%{artist}%'
     and w.TITLE LIKE '{track_title}'
     
+    """
+
+    apple_music_daily_top_100_gb = f"""
+
+        SELECT w.DATE_KEY
+        , w.TITLE
+        , p.ARTIST_DISPLAY_NAME
+        , w.CURRENT_POSITION
+        , c.CHART_NAME
+        , c.CHART_KEY
+        , cu.CUSTOMER_NAME
+        , dc.COUNTRY_CODE
+        , dc.COUNTRY_NAME    
+    
+    from DF_PROD_DAP_MISC.DAP.FACT_CHARTS_DAILY w
+    inner join DF_PROD_DAP_MISC.DAP.DIM_CHART c on c.CHART_KEY = w.CHART_KEY
+    inner join DF_PROD_DAP_MISC.DAP.DIM_COUNTRY dc on dc.COUNTRY_KEY = w.COUNTRY_KEY
+    inner join DF_PROD_DAP_MISC.DAP.DIM_CUSTOMER cu on cu.CUSTOMER_KEY = w.CUSTOMER_KEY
+    inner join DF_PROD_DAP_MISC.DAP.DIM_PRODUCT p on p.PRODUCT_KEY = w.PRODUCT_KEY
+    
+    WHERE (w.DATE_KEY = '{date - week_delta}' or w.DATE_KEY = '{date}')
+    and dc.COUNTRY_CODE = 'GB'
+    and c.CHART_NAME = 'Top Songs'
+    and p.ARTIST_DISPLAY_NAME LIKE '%{artist}%'
+    and w.TITLE = '{track_title}'
+    and cu.CUSTOMER_NAME LIKE '%Apple Music%'
+    and w.CURRENT_POSITION <= 100
+
     """
 
     query_total_streams_dsp = f"""
@@ -149,4 +169,58 @@ def select_queries(year, month, day, artist: str, track_title: str):
 
     """
 
-    return hot_hits_uk, todays_hits_apple_uk, todays_top_hits_spotify, spotify_daily_top_200_gb, query_total_streams_dsp, spotify_top_200_global
+    shazam_top_200_gb = f"""
+    SELECT w.DATE_KEY
+        , w.TITLE
+        , p.ARTIST_DISPLAY_NAME
+        , w.CURRENT_POSITION
+        , c.CHART_NAME
+        , c.CHART_KEY
+        , cu.CUSTOMER_NAME
+        , dc.COUNTRY_CODE
+        , dc.COUNTRY_NAME    
+    
+    from DF_PROD_DAP_MISC.DAP.FACT_CHARTS_WEEKLY w
+    inner join DF_PROD_DAP_MISC.DAP.DIM_CHART c on c.CHART_KEY = w.CHART_KEY
+    inner join DF_PROD_DAP_MISC.DAP.DIM_COUNTRY dc on dc.COUNTRY_KEY = w.COUNTRY_KEY
+    inner join DF_PROD_DAP_MISC.DAP.DIM_CUSTOMER cu on cu.CUSTOMER_KEY = w.CUSTOMER_KEY
+    inner join DF_PROD_DAP_MISC.DAP.DIM_PRODUCT p on p.PRODUCT_KEY = w.PRODUCT_KEY
+    
+    WHERE (w.DATE_KEY = '{date - week_delta}' or w.DATE_KEY = '{date}')
+    and dc.COUNTRY_CODE = 'GB'
+    and cu.CUSTOMER_NAME LIKE '%Shazam%'
+    and c.CHART_NAME = 'SHAZAM TOP 200'
+    and w.TITLE = '{track_title}'
+    and p.ARTIST_DISPLAY_NAME = 'Ed Sheeran'
+
+    """
+
+    shazam_top_200_ww = f"""
+
+    SELECT w.DATE_KEY
+        , w.TITLE
+        , p.ARTIST_DISPLAY_NAME
+        , w.CURRENT_POSITION
+        , c.CHART_NAME
+        , c.CHART_KEY
+        , cu.CUSTOMER_NAME
+        , dc.COUNTRY_CODE
+        , dc.COUNTRY_NAME    
+    
+    from DF_PROD_DAP_MISC.DAP.FACT_CHARTS_WEEKLY w
+    inner join DF_PROD_DAP_MISC.DAP.DIM_CHART c on c.CHART_KEY = w.CHART_KEY
+    inner join DF_PROD_DAP_MISC.DAP.DIM_COUNTRY dc on dc.COUNTRY_KEY = w.COUNTRY_KEY
+    inner join DF_PROD_DAP_MISC.DAP.DIM_CUSTOMER cu on cu.CUSTOMER_KEY = w.CUSTOMER_KEY
+    inner join DF_PROD_DAP_MISC.DAP.DIM_PRODUCT p on p.PRODUCT_KEY = w.PRODUCT_KEY
+    
+    WHERE (w.DATE_KEY = '{date - week_delta}' or w.DATE_KEY = '{date}')
+    and dc.COUNTRY_CODE = 'WW'
+    and cu.CUSTOMER_NAME LIKE '%Shazam%'
+    and c.CHART_NAME = 'SHAZAM TOP 200'
+    and w.TITLE = '{track_title}'
+    and p.ARTIST_DISPLAY_NAME = 'Ed Sheeran'
+
+    """
+
+    return hot_hits_uk, todays_hits_apple_uk, todays_top_hits_spotify, spotify_daily_top_200_gb, query_total_streams_dsp, \
+           spotify_top_200_global, apple_music_daily_top_100_gb, shazam_top_200_gb, shazam_top_200_ww
