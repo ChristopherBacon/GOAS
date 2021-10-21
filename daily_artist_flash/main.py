@@ -9,6 +9,8 @@ import os
 import datetime
 import snowflake.connector
 import pandas as pd
+from openpyxl.utils.dataframe import dataframe_to_rows
+from openpyxl import Workbook
 
 
 def main():
@@ -16,7 +18,7 @@ def main():
     load_dotenv()
     # connect to snowflake
     cursor = connect_to_snowflake()
-
+    # create daily flash df
     daily_flash = create_daily_flash()
 
     # artists & tracks to check
@@ -27,6 +29,7 @@ def main():
     week_prior = '2021-09-24'
     week = '2021-09-17'
 
+    # iterate through utility functions and collect data
     for k, v in artist_track_dict.items():
         selected_queries = select_queries(2021, 9, 24, k, v)
         query_dfs = get_query_dfs(selected_queries, cursor)
@@ -35,8 +38,16 @@ def main():
         daily_flash = add_row_to_daily_flash(data_row, daily_flash, k, v)
 
     print(daily_flash)
-    title  = f"daily_flash_{week}.xlsx"
-    daily_flash.to_csv(title)
+
+    # save work into excel format
+    wb = Workbook()
+    ws = wb.create_sheet('Daily Flash')
+    rows = dataframe_to_rows(daily_flash, index=True, header=True)
+    for r in rows:
+        ws.append(r)
+
+    title = f"daily_flash_{week}.xlsx"
+    wb.save(title)
 
 
 

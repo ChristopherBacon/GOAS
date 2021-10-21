@@ -344,7 +344,7 @@ def create_daily_flash():
                                            'Spotify Daily Top 200 (GB)', 'Youtube Views (Global)', 'Spotify Daily Top 200 (Global)',
                                            'Apple Music Daily Top 100 (GB)', 'Shazam Top 200 (GB)', 'Shazam Top 200 (Global)',
                                            'OCC Top 100 Singles'],
-                                        ['week prior change', 'current week']], names=['source','week'])
+                                        ['week prior change', 'current week']], names=['source', 'week'])
 
     daily_flash = pd.DataFrame(columns= columns, index=index)
 

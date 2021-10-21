@@ -248,5 +248,6 @@ def select_queries(year, month, day, artist: str, track_title: str):
 
     """
 
+
     return hot_hits_uk, todays_hits_apple_uk, todays_top_hits_spotify, spotify_daily_top_200_gb, query_total_streams_dsp, \
            spotify_top_200_global, apple_music_daily_top_100_gb, shazam_top_200_gb, shazam_top_200_ww, occ_top_100
