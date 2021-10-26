@@ -5,6 +5,8 @@ import snowflake.connector
 import pandas as pd
 from dotenv import load_dotenv
 import os
+
+# environment variables from file
 load_dotenv()
 # readable print out tables
 desired_width = 320
@@ -40,7 +42,6 @@ def save_query_data_snowflake(cursor, query, f_name):
 
 
 def connect_to_snowflake():
-
     USER_SNOW = os.getenv("USER_SNOW")
     PASSWORD = os.getenv("PASSWORD")
     AUTHENTICATOR = os.getenv("AUTHENTICATOR")
@@ -69,9 +70,11 @@ def get_query_dfs(selected_queries, cursor):
     shazam_top_200_gb_df = fetch_data_as_df(cursor, selected_queries[7])
     shazam_top_200_ww_df = fetch_data_as_df(cursor, selected_queries[8])
     occ_top_100_df = fetch_data_as_df(cursor, selected_queries[9])
+    airplay_chart_radiomonitor_gb_df = fetch_data_as_df(cursor, selected_queries[10])
 
     return hot_hits_uk_df, todays_hits_apple_uk_df, todays_top_hits_spotify_df, spotify_daily_top_200_gb_df, query_total_streams_dsp_df, \
-           spotify_daily_top_200_ww_df, apple_music_daily_top_100_gb_df, shazam_top_200_gb_df, shazam_top_200_ww_df, occ_top_100_df
+           spotify_daily_top_200_ww_df, apple_music_daily_top_100_gb_df, shazam_top_200_gb_df, shazam_top_200_ww_df, occ_top_100_df,\
+           airplay_chart_radiomonitor_gb_df
 
 def week_change_calculator(df_week_prior, df_week):
     if (df_week != 'N/A') & (df_week_prior != 'N/A'):
@@ -111,6 +114,7 @@ def hot_hits_uk(df, week_prior, week, playlist):
 
     return df_week_prior, df_week
 
+
 def todays_top_hits(df, week_prior, week, playlist):
 
     try:
@@ -134,6 +138,7 @@ def todays_top_hits(df, week_prior, week, playlist):
 
     return df_week_prior, df_week
 
+
 def todays_hits(df, week_prior, week, playlist):
     try:
         df['DATE_KEY'] = df['DATE_KEY'].astype(str)
@@ -156,6 +161,7 @@ def todays_hits(df, week_prior, week, playlist):
 
     return df_week_prior, df_week
 
+
 def spotify_daily_200_gb_selector(df, week_prior, week, playlist):
     try:
         df['DATE_KEY'] = df['DATE_KEY'].astype(str)
@@ -175,6 +181,7 @@ def spotify_daily_200_gb_selector(df, week_prior, week, playlist):
     df_week_prior = week_change_calculator(df_week, df_week_prior)
 
     return df_week_prior, df_week
+
 
 def youtube_streams_summed(df, week_prior, week):
     try:
@@ -196,6 +203,7 @@ def youtube_streams_summed(df, week_prior, week):
 
     return df_week_prior, df_week
 
+
 def spotify_top_200_global(df, week_prior, week, playlist):
     try:
         df['DATE_KEY'] = df['DATE_KEY'].astype(str)
@@ -215,6 +223,7 @@ def spotify_top_200_global(df, week_prior, week, playlist):
     df_week_prior = week_change_calculator(df_week, df_week_prior)
 
     return df_week_prior, df_week
+
 
 def apple_music_daily_top_100_gb(df, week_prior, week, playlist):
     try:
@@ -236,6 +245,7 @@ def apple_music_daily_top_100_gb(df, week_prior, week, playlist):
 
     return df_week_prior, df_week
 
+
 def shazam_top_200_gb(df, week_prior, week, playlist):
     try:
         df['DATE_KEY'] = df['DATE_KEY'].astype(str)
@@ -256,6 +266,7 @@ def shazam_top_200_gb(df, week_prior, week, playlist):
 
     return df_week_prior, df_week
 
+
 def shazam_top_200_ww(df, week_prior, week, playlist):
     try:
         df['DATE_KEY'] = df['DATE_KEY'].astype(str)
@@ -275,6 +286,7 @@ def shazam_top_200_ww(df, week_prior, week, playlist):
     df_week_prior = week_change_calculator(df_week, df_week_prior)
 
     return df_week_prior, df_week
+
 
 def occ_top_100(df, week_prior, week, playlist):
     try:
@@ -297,6 +309,26 @@ def occ_top_100(df, week_prior, week, playlist):
     return df_week_prior, df_week
 
 
+def airplay_radiomonitor_gb(df, week_prior, week, playlist):
+    try:
+        df['DATE_KEY'] = df['DATE_KEY'].astype(str)
+    except:
+        pass
+    try:
+        df_week_prior = df.loc[(df['DATE_KEY'] == week_prior) & (df['CHART_NAME'] == playlist)]
+        df_week_prior = df_week_prior.iloc[0, 3]
+    except:
+        df_week_prior = 'N/A'
+    try:
+        df_week = df.loc[(df['DATE_KEY'] == week) & (df['CHART_NAME'] == playlist)]
+        df_week = df_week.iloc[0, 3]
+    except:
+        df_week = 'N/A'
+
+    df_week_prior = week_change_calculator(df_week, df_week_prior)
+
+    return df_week_prior, df_week
+
 
 def create_row(dfs, week_prior, week):
     data_row = []
@@ -311,7 +343,8 @@ def create_row(dfs, week_prior, week):
         apple_music_daily_top_100_gb(dfs[6], week_prior, week, "Top Songs"),
         shazam_top_200_gb(dfs[7], week_prior, week, "SHAZAM TOP 200"),
         shazam_top_200_ww(dfs[8], week_prior, week, "SHAZAM TOP 200"),
-        occ_top_100(dfs[9], week_prior, week, "Top 100 Combined Singles")
+        occ_top_100(dfs[9], week_prior, week, "Top 100 Combined Singles"),
+        airplay_radiomonitor_gb(dfs[10], week_prior, week, "Radio Airplay Chart"),
     ]
 
     for x in data_point_gatherer:
@@ -332,6 +365,7 @@ def data_row_dict(row_data):
                 "Shazam Top 200 (GB)": {"week prior change": row_data[14], "current week": row_data[15]},
                 "Shazam Top 200 (Global)": {"week prior change": row_data[16], "current week": row_data[17]},
                 "OCC Top 100 Singles": {"week prior change": row_data[18], "current week": row_data[19]},
+                "Airplay (Radiomonitor GB)": {"week prior change": row_data[20], "current week": row_data[21]}
     }
     return data_row
 
@@ -343,7 +377,7 @@ def create_daily_flash():
     columns = pd.MultiIndex.from_product([['Hot Hits UK (Spotify)','Today\'s Top Hits (Spotify)','Today\'s Hits (Apple)',
                                            'Spotify Daily Top 200 (GB)', 'Youtube Views (Global)', 'Spotify Daily Top 200 (Global)',
                                            'Apple Music Daily Top 100 (GB)', 'Shazam Top 200 (GB)', 'Shazam Top 200 (Global)',
-                                           'OCC Top 100 Singles'],
+                                           'OCC Top 100 Singles', 'Airplay (Radiomonitor GB)'],
                                         ['week prior change', 'current week']], names=['source', 'week'])
 
     daily_flash = pd.DataFrame(columns= columns, index=index)

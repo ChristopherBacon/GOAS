@@ -10,7 +10,8 @@ import datetime
 import snowflake.connector
 import pandas as pd
 from openpyxl.utils.dataframe import dataframe_to_rows
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
+from openpyxl.styles import Font, Fill
 
 
 def main():
@@ -26,8 +27,8 @@ def main():
         'Clean Bandit x Topic': 'Drive (feat. Wes Nelson)',
         'Ed Sheeran': 'Bad Habits'
     }
-    week_prior = '2021-09-24'
-    week = '2021-09-17'
+    week_prior = '2021-09-17'
+    week = '2021-09-24'
 
     # iterate through utility functions and collect data
     for k, v in artist_track_dict.items():
@@ -42,12 +43,23 @@ def main():
     # save work into excel format
     wb = Workbook()
     ws = wb.create_sheet('Daily Flash')
+
     rows = dataframe_to_rows(daily_flash, index=True, header=True)
     for r in rows:
         ws.append(r)
 
+    # for row in ws["1:1"]:
+    #     for cell in row:
+    #         cell.font = Font(b=True)
+
+    # for cell in ws["1:2"]:
+
+
     title = f"daily_flash_{week}.xlsx"
     wb.save(title)
+
+
+
 
 
 
