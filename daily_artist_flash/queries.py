@@ -24,7 +24,7 @@ def select_queries(year, month, day, artist: str, track_title: str):
     
     WHERE p.PLAYLIST_NAME LIKE '%Hot Hits UK%'
         and pr.ARTIST_DISPLAY_NAME LIKE '%{artist}%'
-        and tm.CUSTOMER_TRACK_TITLE = '{track_title}'
+        and tm.CUSTOMER_TRACK_TITLE LIKE '%{track_title}%'
         and (tm.DATE_KEY = '{date - week_delta}' or tm.DATE_KEY = '{date}')
 
     """
@@ -44,7 +44,7 @@ def select_queries(year, month, day, artist: str, track_title: str):
 
     WHERE p.PLAYLIST_NAME LIKE '%Today''s Hits%'
         and pr.ARTIST_DISPLAY_NAME LIKE '%{artist}%'
-        and tm.CUSTOMER_TRACK_TITLE = '{track_title}'
+        and tm.CUSTOMER_TRACK_TITLE LIKE '%{track_title}%'
         and (tm.DATE_KEY = '{date - week_delta}' or tm.DATE_KEY = '{date}')
     
     """
@@ -64,7 +64,7 @@ def select_queries(year, month, day, artist: str, track_title: str):
 
     WHERE p.PLAYLIST_NAME LIKE '%Today''s Top Hits%'
         and pr.ARTIST_DISPLAY_NAME LIKE '%{artist}%'
-        and tm.CUSTOMER_TRACK_TITLE = '{track_title}'
+        and tm.CUSTOMER_TRACK_TITLE LIKE '%{track_title}%'
         and (tm.DATE_KEY = '{date - week_delta}' or tm.DATE_KEY = '{date}')
 
     """
@@ -163,7 +163,8 @@ def select_queries(year, month, day, artist: str, track_title: str):
         inner join DF_PROD_DAP_MISC.DAP.DIM_PRODUCT p on p.PRODUCT_KEY = s.PRODUCT_KEY
 
     WHERE s.DATE_KEY BETWEEN '{date - week_delta}' AND '{date}'
-            and p.PRODUCT_TITLE = '{track_title}'
+            and p.PRODUCT_TITLE LIKE '%{track_title}%'
+            and p.ARTIST_DISPLAY_NAME LIKE '%{artist}%'
 
     GROUP BY 1,2,3,4,5
 

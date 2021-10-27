@@ -5,6 +5,9 @@ import snowflake.connector
 import pandas as pd
 from dotenv import load_dotenv
 import os
+from openpyxl.utils.dataframe import dataframe_to_rows
+from openpyxl import Workbook, load_workbook
+from openpyxl.styles import Font, PatternFill
 
 # environment variables from file
 load_dotenv()
@@ -390,6 +393,66 @@ def add_row_to_daily_flash(data_row, daily_flash, artist, track_title):
     daily_flash = daily_flash.append(pd.DataFrame.from_dict(data_row).unstack().rename(f"{artist_track}"))
 
     return daily_flash
+
+def daily_flash_to_excel(daily_flash_df, artist_track_dict, week):
+
+    row_len = len(artist_track_dict)
+    # save work into excel format
+    wb = Workbook()
+    ws = wb.create_sheet('Daily Flash')
+    wb.active = ws
+
+    rows = dataframe_to_rows(daily_flash_df, index=True, header=True)
+    for r in rows:
+        ws.append(r)
+
+    font = Font(bold=True)
+    red_fill = PatternFill(patternType='solid', fgColor='f4cccc')
+    green_fill = PatternFill(patternType='solid', fgColor='d9ead3')
+
+    # header rows bold
+    for col in range(1, 24):
+        for row in range(1, 3):
+            ws.cell(row=row, column=col).font = font
+
+    # track rows bold
+    for col in range(1, 2):
+        for row in range(1, 4+row_len):
+            ws.cell(row=row, column=col).font = font
+
+    sheet = wb['Daily Flash']
+
+    # red or green fill
+    # add in len dictionary of artists
+    for col in range(2, 24, 2):
+        for row in range(1, 4+row_len):
+            if type(sheet.cell(row=row, column=col + 1).value) == int:
+                if sheet.cell(row=row, column=col).value < 0:
+                    sheet.cell(row=row, column=col + 1).fill = green_fill
+                elif sheet.cell(row=row, column=col).value > 0:
+                    sheet.cell(row=row, column=col + 1).fill = red_fill
+                elif sheet.cell(row=row, column=col).value == 0:
+                    pass
+                elif sheet.cell(row=row, column=col).value == 'N/A':
+                    pass
+
+    # Youtube Exception
+    for col in range(10, 11):
+        for row in range(1, 4+row_len):
+            if type(sheet.cell(row=row, column=col + 1).value) == int:
+                if sheet.cell(row=row, column=col).value < 0:
+                    sheet.cell(row=row, column=col + 1).fill = red_fill
+                elif sheet.cell(row=row, column=col).value > 0:
+                    sheet.cell(row=row, column=col + 1).fill = green_fill
+                elif sheet.cell(row=row, column=col).value == 0:
+                    pass
+                elif sheet.cell(row=row, column=col).value == 'N/A':
+                    pass
+
+    title = f"daily_flash_{week}.xlsx"
+    wb.save(title)
+
+    return
 
 
 
