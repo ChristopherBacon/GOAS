@@ -23,7 +23,7 @@ def main():
     artist_track_dict = {
         'Oliver Tree': 'Life Goes On',
         'Tiësto & KAROL G': "Don''t Be Shy",
-        'Mahalia': 'Roadside (Feat. AJ Tracey)',
+        'Mahalia': 'Roadside (feat. AJ Tracey)',
         'Tion Wayne x Jae5 x Davido': "Who''s True",
         'Ed Sheeran': 'Shivers',
         'Charli XCX': 'Good Ones',
