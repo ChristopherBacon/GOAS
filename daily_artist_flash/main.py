@@ -1,14 +1,8 @@
-from daily_artist_flash.utilities import connect_to_snowflake, get_query_dfs, week_change_calculator, \
-    hot_hits_uk, todays_top_hits, todays_hits, spotify_daily_200_gb_selector, youtube_streams_summed, \
-    create_row, data_row_dict, create_daily_flash, add_row_to_daily_flash, fetch_data_as_df, daily_flash_to_excel
-
+from daily_artist_flash.utilities import connect_to_snowflake, get_query_dfs, \
+    create_row, data_row_dict, create_daily_flash, add_row_to_daily_flash, daily_flash_to_excel
 from daily_artist_flash.queries import select_queries
-
 from dotenv import load_dotenv
-import os
-import datetime
-import snowflake.connector
-import pandas as pd
+from datetime import datetime, timedelta
 
 
 def main():
@@ -36,22 +30,32 @@ def main():
         'Anne-Marie & Niall Horan': 'Our Song'
     }
 
-    week_prior = '2021-10-15'
-    week = '2021-10-22'
+    # create dates for queries
+    current_date = datetime.now().date()
+    # moves week back to Thursday just gone to ensure weekly data ingest
+    Thursday_delta = timedelta(days=4)
+    week = current_date - Thursday_delta
+    wk_year = int(week.year)
+    wk_month = int(week.month)
+    wk_day = int(week.day)
+    wk = str(week)
+
+    delta = timedelta(weeks=1)
+    week_prior = str(week - delta)
+
 
     # iterate through utility functions and collect data
     for k, v in artist_track_dict.items():
-        selected_queries = select_queries(2021, 10, 22, k, v)
+        selected_queries = select_queries(wk_year, wk_month, wk_day, k, v)
         query_dfs = get_query_dfs(selected_queries, cursor)
-        data_rows = create_row(query_dfs, week_prior, week)
+        data_rows = create_row(query_dfs, week_prior, wk)
         data_row = data_row_dict(data_rows)
         daily_flash = add_row_to_daily_flash(data_row, daily_flash, k, v)
 
-    print(daily_flash)
+    #print(daily_flash)
     # creates excel
     daily_flash_to_excel(daily_flash, artist_track_dict, week)
 
 
 if __name__ == "__main__":
     main()
-

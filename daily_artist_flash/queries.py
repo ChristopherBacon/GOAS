@@ -1,12 +1,10 @@
 import datetime
-# set up logging
-import logging
 
 
 # This includes both UK & NON-UK charts information to be filtered
-def select_queries(year, month, day, artist: str, track_title: str):
+def select_queries(year, month, day, artist, track_title):
     date = datetime.date(year, month, day)
-    #Gives us the week prior
+    # Gives us the week prior
     week_delta = datetime.timedelta(days=7)
 
     hot_hits_uk = f"""
@@ -249,36 +247,5 @@ def select_queries(year, month, day, artist: str, track_title: str):
 
     """
 
-    airplay_chart_radiomonitor_gb = f"""
-            SELECT w.DATE_KEY
-            , w.TITLE
-            , p.ARTIST_DISPLAY_NAME
-            , w.CURRENT_POSITION
-            , c.CHART_NAME
-            , c.CHART_KEY
-            , c.ACCOUNT
-            , cu.CUSTOMER_NAME
-            , dc.COUNTRY_CODE
-            , dc.COUNTRY_NAME
-            , cu.CUSTOMER_KEY
-        
-    from DF_PROD_DAP_MISC.DAP.FACT_CHARTS_WEEKLY w
-        inner join DF_PROD_DAP_MISC.DAP.DIM_CHART c on c.CHART_KEY = w.CHART_KEY
-        inner join DF_PROD_DAP_MISC.DAP.DIM_COUNTRY dc on dc.COUNTRY_KEY = w.COUNTRY_KEY
-        inner join DF_PROD_DAP_MISC.DAP.DIM_CUSTOMER cu on cu.CUSTOMER_KEY = w.CUSTOMER_KEY
-        inner join DF_PROD_DAP_MISC.DAP.DIM_PRODUCT p on p.PRODUCT_KEY = w.PRODUCT_KEY
-    
-    WHERE (w.DATE_KEY = '{date - week_delta}' or w.DATE_KEY = '{date}')
-    and dc.COUNTRY_CODE = 'GB'
-    and p.ARTIST_DISPLAY_NAME = '%{artist}%'
-    and w.TITLE = '{track_title}'
-    and c.ACCOUNT LIKE '%Google Doc Charts%'
-    and c.CHART_NAME = 'Radio Airplay Chart'
-
-    """
-
-
-
-
     return hot_hits_uk, todays_hits_apple_uk, todays_top_hits_spotify, spotify_daily_top_200_gb, query_total_streams_dsp, \
-           spotify_top_200_global, apple_music_daily_top_100_gb, shazam_top_200_gb, shazam_top_200_ww, occ_top_100, airplay_chart_radiomonitor_gb
+           spotify_top_200_global, apple_music_daily_top_100_gb, shazam_top_200_gb, shazam_top_200_ww, occ_top_100

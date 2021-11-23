@@ -1,5 +1,4 @@
 # from daily_artist_flash.queries import select_queries
-import logging
 from datetime import datetime
 import snowflake.connector
 import pandas as pd
@@ -15,7 +14,6 @@ load_dotenv()
 desired_width = 320
 pd.set_option("display.width", desired_width)
 pd.set_option("display.max_columns", 12)
-
 
 
 def fetch_data_as_df(cur, sql):
@@ -73,11 +71,10 @@ def get_query_dfs(selected_queries, cursor):
     shazam_top_200_gb_df = fetch_data_as_df(cursor, selected_queries[7])
     shazam_top_200_ww_df = fetch_data_as_df(cursor, selected_queries[8])
     occ_top_100_df = fetch_data_as_df(cursor, selected_queries[9])
-    airplay_chart_radiomonitor_gb_df = fetch_data_as_df(cursor, selected_queries[10])
 
     return hot_hits_uk_df, todays_hits_apple_uk_df, todays_top_hits_spotify_df, spotify_daily_top_200_gb_df, query_total_streams_dsp_df, \
-           spotify_daily_top_200_ww_df, apple_music_daily_top_100_gb_df, shazam_top_200_gb_df, shazam_top_200_ww_df, occ_top_100_df,\
-           airplay_chart_radiomonitor_gb_df
+           spotify_daily_top_200_ww_df, apple_music_daily_top_100_gb_df, shazam_top_200_gb_df, shazam_top_200_ww_df, occ_top_100_df
+
 
 def week_change_calculator(df_week_prior, df_week):
     if (df_week != 'N/A') & (df_week_prior != 'N/A'):
@@ -119,7 +116,6 @@ def hot_hits_uk(df, week_prior, week, playlist):
 
 
 def todays_top_hits(df, week_prior, week, playlist):
-
     try:
         df['DATE_KEY'] = df['DATE_KEY'].astype(str)
         df['PLAYLIST_NAME'] = df['PLAYLIST_NAME'].str.replace('\'', '', regex=True)
@@ -172,12 +168,12 @@ def spotify_daily_200_gb_selector(df, week_prior, week, playlist):
         pass
     try:
         df_week_prior = df.loc[(df['DATE_KEY'] == week_prior) & (df['CHART_NAME'] == playlist)]
-        df_week_prior = df_week_prior.iloc[0,2]
+        df_week_prior = df_week_prior.iloc[0, 2]
     except:
         df_week_prior = 'N/A'
     try:
         df_week = df.loc[(df['DATE_KEY'] == week) & (df['CHART_NAME'] == playlist)]
-        df_week = df_week.iloc[0,2]
+        df_week = df_week.iloc[0, 2]
     except:
         df_week = 'N/A'
 
@@ -200,7 +196,7 @@ def youtube_streams_summed(df, week_prior, week):
         df_week = df.loc[(df['DATE_KEY'] == week) & (df['CUSTOMER_NAME'] == 'YouTube')]
         df_week = df_week['SUMMED_STREAMS'].sum()
     except:
-       df_week = 'N/A'
+        df_week = 'N/A'
 
     df_week_prior = week_change_calculator(df_week, df_week_prior)
 
@@ -214,12 +210,12 @@ def spotify_top_200_global(df, week_prior, week, playlist):
         pass
     try:
         df_week_prior = df.loc[(df['DATE_KEY'] == week_prior) & (df['CHART_NAME'] == playlist)]
-        df_week_prior = df_week_prior.iloc[0,3]
+        df_week_prior = df_week_prior.iloc[0, 3]
     except:
         df_week_prior = 'N/A'
     try:
         df_week = df.loc[(df['DATE_KEY'] == week) & (df['CHART_NAME'] == playlist)]
-        df_week = df_week.iloc[0,3]
+        df_week = df_week.iloc[0, 3]
     except:
         df_week = 'N/A'
 
@@ -235,12 +231,12 @@ def apple_music_daily_top_100_gb(df, week_prior, week, playlist):
         pass
     try:
         df_week_prior = df.loc[(df['DATE_KEY'] == week_prior) & (df['CHART_NAME'] == playlist)]
-        df_week_prior = df_week_prior.iloc[0,3]
+        df_week_prior = df_week_prior.iloc[0, 3]
     except:
         df_week_prior = 'N/A'
     try:
         df_week = df.loc[(df['DATE_KEY'] == week) & (df['CHART_NAME'] == playlist)]
-        df_week = df_week.iloc[0,3]
+        df_week = df_week.iloc[0, 3]
     except:
         df_week = 'N/A'
 
@@ -256,12 +252,12 @@ def shazam_top_200_gb(df, week_prior, week, playlist):
         pass
     try:
         df_week_prior = df.loc[(df['DATE_KEY'] == week_prior) & (df['CHART_NAME'] == playlist)]
-        df_week_prior = df_week_prior.iloc[0,3]
+        df_week_prior = df_week_prior.iloc[0, 3]
     except:
         df_week_prior = 'N/A'
     try:
         df_week = df.loc[(df['DATE_KEY'] == week) & (df['CHART_NAME'] == playlist)]
-        df_week = df_week.iloc[0,3]
+        df_week = df_week.iloc[0, 3]
     except:
         df_week = 'N/A'
 
@@ -277,12 +273,12 @@ def shazam_top_200_ww(df, week_prior, week, playlist):
         pass
     try:
         df_week_prior = df.loc[(df['DATE_KEY'] == week_prior) & (df['CHART_NAME'] == playlist)]
-        df_week_prior = df_week_prior.iloc[0,3]
+        df_week_prior = df_week_prior.iloc[0, 3]
     except:
         df_week_prior = 'N/A'
     try:
         df_week = df.loc[(df['DATE_KEY'] == week) & (df['CHART_NAME'] == playlist)]
-        df_week = df_week.iloc[0,3]
+        df_week = df_week.iloc[0, 3]
     except:
         df_week = 'N/A'
 
@@ -312,30 +308,9 @@ def occ_top_100(df, week_prior, week, playlist):
     return df_week_prior, df_week
 
 
-def airplay_radiomonitor_gb(df, week_prior, week, playlist):
-    try:
-        df['DATE_KEY'] = df['DATE_KEY'].astype(str)
-    except:
-        pass
-    try:
-        df_week_prior = df.loc[(df['DATE_KEY'] == week_prior) & (df['CHART_NAME'] == playlist)]
-        df_week_prior = df_week_prior.iloc[0, 3]
-    except:
-        df_week_prior = 'N/A'
-    try:
-        df_week = df.loc[(df['DATE_KEY'] == week) & (df['CHART_NAME'] == playlist)]
-        df_week = df_week.iloc[0, 3]
-    except:
-        df_week = 'N/A'
-
-    df_week_prior = week_change_calculator(df_week, df_week_prior)
-
-    return df_week_prior, df_week
-
-
 def create_row(dfs, week_prior, week):
     data_row = []
-    week_selector = [0,1]
+    week_selector = [0, 1]
     data_point_gatherer = [
         hot_hits_uk(dfs[0], week_prior, week, "Hot Hits UK"),
         todays_top_hits(dfs[1], week_prior, week, "Todays Hits"),
@@ -346,8 +321,7 @@ def create_row(dfs, week_prior, week):
         apple_music_daily_top_100_gb(dfs[6], week_prior, week, "Top Songs"),
         shazam_top_200_gb(dfs[7], week_prior, week, "SHAZAM TOP 200"),
         shazam_top_200_ww(dfs[8], week_prior, week, "SHAZAM TOP 200"),
-        occ_top_100(dfs[9], week_prior, week, "Top 100 Combined Singles"),
-        airplay_radiomonitor_gb(dfs[10], week_prior, week, "Radio Airplay Chart"),
+        occ_top_100(dfs[9], week_prior, week, "Top 100 Combined Singles")
     ]
 
     for x in data_point_gatherer:
@@ -358,32 +332,31 @@ def create_row(dfs, week_prior, week):
 
 
 def data_row_dict(row_data):
-    data_row = {"Hot Hits UK (Spotify)":{"week prior change": row_data[0], "current week":row_data[1]},
-                "Today\'s Top Hits (Spotify)":{"week prior change":row_data[2], "current week":row_data[3]},
-                "Today\'s Hits (Apple)": {"week prior change":row_data[4], "current week":row_data[5]},
-                "Spotify Daily Top 200 (GB)":{"week prior change":row_data[6], "current week":row_data[7]},
-                "Youtube Views (Global)":{"week prior change":row_data[8], "current week":row_data[9]},
+    data_row = {"Hot Hits UK (Spotify)": {"week prior change": row_data[0], "current week": row_data[1]},
+                "Today\'s Top Hits (Spotify)": {"week prior change": row_data[2], "current week": row_data[3]},
+                "Today\'s Hits (Apple)": {"week prior change": row_data[4], "current week": row_data[5]},
+                "Spotify Daily Top 200 (GB)": {"week prior change": row_data[6], "current week": row_data[7]},
+                "Youtube Views (Global)": {"week prior change": row_data[8], "current week": row_data[9]},
                 "Spotify Daily Top 200 (Global)": {"week prior change": row_data[10], "current week": row_data[11]},
                 "Apple Music Daily Top 100 (GB)": {"week prior change": row_data[12], "current week": row_data[13]},
                 "Shazam Top 200 (GB)": {"week prior change": row_data[14], "current week": row_data[15]},
                 "Shazam Top 200 (Global)": {"week prior change": row_data[16], "current week": row_data[17]},
-                "OCC Top 100 Singles": {"week prior change": row_data[18], "current week": row_data[19]},
-                "Airplay (Radiomonitor GB)": {"week prior change": row_data[20], "current week": row_data[21]}
-    }
+                "OCC Top 100 Singles": {"week prior change": row_data[18], "current week": row_data[19]}
+                }
     return data_row
 
 
 def create_daily_flash():
-
     index = pd.Index([], name='artist - song')
 
-    columns = pd.MultiIndex.from_product([['Hot Hits UK (Spotify)','Today\'s Top Hits (Spotify)','Today\'s Hits (Apple)',
-                                           'Spotify Daily Top 200 (GB)', 'Youtube Views (Global)', 'Spotify Daily Top 200 (Global)',
-                                           'Apple Music Daily Top 100 (GB)', 'Shazam Top 200 (GB)', 'Shazam Top 200 (Global)',
-                                           'OCC Top 100 Singles', 'Airplay (Radiomonitor GB)'],
-                                        ['week prior change', 'current week']], names=['source', 'week'])
+    columns = pd.MultiIndex.from_product(
+        [['Hot Hits UK (Spotify)', 'Today\'s Top Hits (Spotify)', 'Today\'s Hits (Apple)',
+          'Spotify Daily Top 200 (GB)', 'Youtube Views (Global)', 'Spotify Daily Top 200 (Global)',
+          'Apple Music Daily Top 100 (GB)', 'Shazam Top 200 (GB)', 'Shazam Top 200 (Global)',
+          'OCC Top 100 Singles'],
+         ['week prior change', 'current week']], names=['source', 'week'])
 
-    daily_flash = pd.DataFrame(columns= columns, index=index)
+    daily_flash = pd.DataFrame(columns=columns, index=index)
 
     return daily_flash
 
@@ -394,8 +367,8 @@ def add_row_to_daily_flash(data_row, daily_flash, artist, track_title):
 
     return daily_flash
 
-def daily_flash_to_excel(daily_flash_df, artist_track_dict, week):
 
+def daily_flash_to_excel(daily_flash_df, artist_track_dict, week):
     row_len = len(artist_track_dict)
     # save work into excel format
     wb = Workbook()
@@ -417,7 +390,7 @@ def daily_flash_to_excel(daily_flash_df, artist_track_dict, week):
 
     # track rows bold
     for col in range(1, 2):
-        for row in range(1, 4+row_len):
+        for row in range(1, 4 + row_len):
             ws.cell(row=row, column=col).font = font
 
     sheet = wb['Daily Flash']
@@ -425,7 +398,7 @@ def daily_flash_to_excel(daily_flash_df, artist_track_dict, week):
     # red or green fill
     # add in len dictionary of artists
     for col in range(2, 24, 2):
-        for row in range(1, 4+row_len):
+        for row in range(1, 4 + row_len):
             if type(sheet.cell(row=row, column=col + 1).value) == int:
                 if sheet.cell(row=row, column=col).value < 0:
                     sheet.cell(row=row, column=col + 1).fill = green_fill
@@ -438,7 +411,7 @@ def daily_flash_to_excel(daily_flash_df, artist_track_dict, week):
 
     # Youtube Exception
     for col in range(10, 11):
-        for row in range(1, 4+row_len):
+        for row in range(1, 4 + row_len):
             if type(sheet.cell(row=row, column=col + 1).value) == int:
                 if sheet.cell(row=row, column=col).value < 0:
                     sheet.cell(row=row, column=col + 1).fill = red_fill
@@ -453,7 +426,3 @@ def daily_flash_to_excel(daily_flash_df, artist_track_dict, week):
     wb.save(title)
 
     return
-
-
-
-
