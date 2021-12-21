@@ -1,5 +1,5 @@
-# from daily_artist_flash.queries import select_queries
-from datetime import datetime
+
+from datetime import datetime, date
 import snowflake.connector
 import pandas as pd
 from dotenv import load_dotenv
@@ -7,10 +7,12 @@ import os
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, PatternFill
+from datetime import datetime, timedelta
+from utils.queries import fact_audio_playlist_track_metrics_latest_ingest, fact_charts_daily_latest_ingest, fact_charts_weekly_latest_ingest, fact_audio_streaming_latest_ingest
 
 # environment variables from file
 load_dotenv()
-# readable print out tables
+# readable print out tables for testing purposes
 desired_width = 320
 pd.set_option("display.width", desired_width)
 pd.set_option("display.max_columns", 12)
@@ -60,6 +62,31 @@ def connect_to_snowflake():
     return cursor
 
 
+def get_week_week_prior_dates(up_to_max_date_query):
+    cursor = connect_to_snowflake()
+    date = fetch_data_as_df(cursor, up_to_max_date_query)
+    week = date['DATE'][0]
+    delta = timedelta(weeks=1)
+    week_prior = str(week - delta)
+    week = str(week)
+    
+    return week_prior, week
+
+
+def get_week_prior_dates_and_week_dates_from_sflake_ingests():
+    fact_audio_playlist_track_metrics_week_prior, fact_audio_playlist_track_metrics_week = get_week_week_prior_dates(fact_audio_playlist_track_metrics_latest_ingest)
+    fact_charts_daily_week_prior, fact_charts_daily_week = get_week_week_prior_dates(fact_charts_daily_latest_ingest)
+    fact_charts_weekly_week_prior, fact_charts_weekly_week = get_week_week_prior_dates(fact_charts_weekly_latest_ingest)
+    fact_audio_streaming_week_prior, fact_audio_streaming_week = get_week_week_prior_dates(fact_audio_streaming_latest_ingest)
+    
+    return fact_audio_playlist_track_metrics_week_prior, fact_audio_playlist_track_metrics_week, \
+            fact_charts_daily_week_prior, fact_charts_daily_week, \
+            fact_charts_weekly_week_prior, fact_charts_weekly_week, \
+            fact_audio_streaming_week_prior, fact_audio_streaming_week
+
+week_prior_weeks = get_week_prior_dates_and_week_dates_from_sflake_ingests()
+
+
 def get_query_dfs(selected_queries, cursor):
     hot_hits_uk_df = fetch_data_as_df(cursor, selected_queries[0])
     todays_hits_apple_uk_df = fetch_data_as_df(cursor, selected_queries[1])
@@ -71,7 +98,8 @@ def get_query_dfs(selected_queries, cursor):
     shazam_top_200_gb_df = fetch_data_as_df(cursor, selected_queries[7])
     shazam_top_200_ww_df = fetch_data_as_df(cursor, selected_queries[8])
     occ_top_100_df = fetch_data_as_df(cursor, selected_queries[9])
-
+    
+    
     return hot_hits_uk_df, todays_hits_apple_uk_df, todays_top_hits_spotify_df, spotify_daily_top_200_gb_df, query_total_streams_dsp_df, \
            spotify_daily_top_200_ww_df, apple_music_daily_top_100_gb_df, shazam_top_200_gb_df, shazam_top_200_ww_df, occ_top_100_df
 
@@ -92,68 +120,81 @@ def week_change_calculator(df_week_prior, df_week):
     return df_week_prior
 
 
-def hot_hits_uk(df, week_prior, week, playlist):
+def hot_hits_uk(df, playlist):
+
+    week_prior = week_prior_weeks[0]
+    week = week_prior_weeks[1]
+
+    try:
+        df['DATE_KEY'] = df['DATE_KEY'].astype(str)
+        df = df.loc[(df['PLAYLIST_NAME'] == playlist)]
+    except Exception:
+        pass
+    try:
+        df_week_prior = df.loc[(df['DATE_KEY'] == week_prior) & (df['PLAYLIST_NAME'] == playlist)]
+        df_week_prior = df_week_prior['TRACK_POSITION'].values[0]
+    except Exception:
+        df_week_prior = 'N/A'
+    try:
+        df_week = df.loc[(df['DATE_KEY'] == week) & (df['PLAYLIST_NAME'] == playlist)]
+        df_week = df_week['TRACK_POSITION'].values[0]
+        
+    except Exception:
+        df_week = 'N/A'
+
+    df_week_prior = week_change_calculator(df_week, df_week_prior)
+
+    return df_week_prior, df_week
+
+
+def todays_top_hits(df, playlist):
+
+    week_prior = week_prior_weeks[0]
+    week = week_prior_weeks[1]
+
     try:
         df['DATE_KEY'] = df['DATE_KEY'].astype(str)
         df['PLAYLIST_NAME'] = df['PLAYLIST_NAME'].str.replace('\'', '', regex=True)
         df = df.loc[(df['PLAYLIST_NAME'] == playlist)]
-    except:
+    except Exception:
         pass
     try:
         df_week_prior = df.loc[(df['DATE_KEY'] == week_prior) & (df['PLAYLIST_NAME'] == playlist)]
         df_week_prior = df_week_prior['TRACK_POSITION'].values[0]
-    except:
+    except Exception:
         df_week_prior = 'N/A'
     try:
         df_week = df.loc[(df['DATE_KEY'] == week) & (df['PLAYLIST_NAME'] == playlist)]
         df_week = df_week['TRACK_POSITION'].values[0]
-    except:
+    except Exception:
         df_week = 'N/A'
 
     df_week_prior = week_change_calculator(df_week, df_week_prior)
 
-    return df_week_prior, df_week
-
-
-def todays_top_hits(df, week_prior, week, playlist):
-    try:
-        df['DATE_KEY'] = df['DATE_KEY'].astype(str)
-        df['PLAYLIST_NAME'] = df['PLAYLIST_NAME'].str.replace('\'', '', regex=True)
-    except:
-        pass
-    try:
-        df_week_prior = df.loc[(df['DATE_KEY'] == week_prior) & (df['PLAYLIST_NAME'] == playlist)]
-        df_week_prior = df_week_prior['TRACK_POSITION'].values[0]
-
-    except:
-        df_week_prior = 'N/A'
-    try:
-        df_week = df.loc[(df['DATE_KEY'] == week) & (df['PLAYLIST_NAME'] == playlist)]
-        df_week = df_week['TRACK_POSITION'].values[0]
-    except:
-        df_week = 'N/A'
-
-    df_week_prior = week_change_calculator(df_week, df_week_prior)
 
     return df_week_prior, df_week
 
 
-def todays_hits(df, week_prior, week, playlist):
+def todays_hits(df, playlist):
+
+    week_prior = week_prior_weeks[0]
+    week = week_prior_weeks[1]    
+
     try:
         df['DATE_KEY'] = df['DATE_KEY'].astype(str)
         df['PLAYLIST_NAME'] = df['PLAYLIST_NAME'].str.replace('\'', '', regex=True)
         df = df.loc[(df['PLAYLIST_NAME'] == playlist)]
-    except:
+    except Exception:
         pass
     try:
         df_week_prior = df.loc[(df['DATE_KEY'] == week_prior) & (df['PLAYLIST_NAME'] == playlist)]
         df_week_prior = df_week_prior['TRACK_POSITION'].values[0]
-    except:
+    except Exception:
         df_week_prior = 'N/A'
     try:
         df_week = df.loc[(df['DATE_KEY'] == week) & (df['PLAYLIST_NAME'] == playlist)]
         df_week = df_week['TRACK_POSITION'].values[0]
-    except:
+    except Exception:
         df_week = 'N/A'
 
     df_week_prior = week_change_calculator(df_week, df_week_prior)
@@ -161,20 +202,24 @@ def todays_hits(df, week_prior, week, playlist):
     return df_week_prior, df_week
 
 
-def spotify_daily_200_gb_selector(df, week_prior, week, playlist):
+def spotify_daily_200_gb_selector(df, playlist):
+
+    week_prior = week_prior_weeks[2]
+    week = week_prior_weeks[3]   
+
     try:
         df['DATE_KEY'] = df['DATE_KEY'].astype(str)
-    except:
+    except Exception:
         pass
     try:
         df_week_prior = df.loc[(df['DATE_KEY'] == week_prior) & (df['CHART_NAME'] == playlist)]
         df_week_prior = df_week_prior.iloc[0, 2]
-    except:
+    except Exception:
         df_week_prior = 'N/A'
     try:
         df_week = df.loc[(df['DATE_KEY'] == week) & (df['CHART_NAME'] == playlist)]
         df_week = df_week.iloc[0, 2]
-    except:
+    except Exception:
         df_week = 'N/A'
 
     df_week_prior = week_change_calculator(df_week, df_week_prior)
@@ -182,20 +227,24 @@ def spotify_daily_200_gb_selector(df, week_prior, week, playlist):
     return df_week_prior, df_week
 
 
-def youtube_streams_summed(df, week_prior, week):
+def youtube_streams_summed(df):
+
+    week_prior = week_prior_weeks[6]
+    week = week_prior_weeks[7]
+
     try:
         df['DATE_KEY'] = df['DATE_KEY'].astype(str)
-    except:
+    except Exception:
         pass
     try:
         df_week_prior = df.loc[(df['DATE_KEY'] == week_prior) & (df['CUSTOMER_NAME'] == 'YouTube')]
         df_week_prior = df_week_prior['SUMMED_STREAMS'].sum()
-    except:
+    except Exception:
         df_week_prior = 'N/A'
     try:
         df_week = df.loc[(df['DATE_KEY'] == week) & (df['CUSTOMER_NAME'] == 'YouTube')]
         df_week = df_week['SUMMED_STREAMS'].sum()
-    except:
+    except Exception:
         df_week = 'N/A'
 
     df_week_prior = week_change_calculator(df_week, df_week_prior)
@@ -203,20 +252,24 @@ def youtube_streams_summed(df, week_prior, week):
     return df_week_prior, df_week
 
 
-def spotify_top_200_global(df, week_prior, week, playlist):
+def spotify_top_200_global(df, playlist):
+
+    week_prior = week_prior_weeks[2]
+    week = week_prior_weeks[3]  
+
     try:
         df['DATE_KEY'] = df['DATE_KEY'].astype(str)
-    except:
+    except Exception:
         pass
     try:
         df_week_prior = df.loc[(df['DATE_KEY'] == week_prior) & (df['CHART_NAME'] == playlist)]
         df_week_prior = df_week_prior.iloc[0, 3]
-    except:
+    except Exception:
         df_week_prior = 'N/A'
     try:
         df_week = df.loc[(df['DATE_KEY'] == week) & (df['CHART_NAME'] == playlist)]
         df_week = df_week.iloc[0, 3]
-    except:
+    except Exception:
         df_week = 'N/A'
 
     df_week_prior = week_change_calculator(df_week, df_week_prior)
@@ -224,20 +277,28 @@ def spotify_top_200_global(df, week_prior, week, playlist):
     return df_week_prior, df_week
 
 
-def apple_music_daily_top_100_gb(df, week_prior, week, playlist):
+def apple_music_daily_top_100_gb(df, playlist):
+
+    # Delay in the data reporting
+    week_prior = date.fromisoformat(week_prior_weeks[2])
+    week = date.fromisoformat(week_prior_weeks[3])
+    delta = timedelta(days=3)
+    week_prior = str(week_prior - delta)
+    week = str(week - delta)
+
     try:
         df['DATE_KEY'] = df['DATE_KEY'].astype(str)
-    except:
+    except Exception:
         pass
     try:
         df_week_prior = df.loc[(df['DATE_KEY'] == week_prior) & (df['CHART_NAME'] == playlist)]
         df_week_prior = df_week_prior.iloc[0, 3]
-    except:
+    except Exception:
         df_week_prior = 'N/A'
     try:
         df_week = df.loc[(df['DATE_KEY'] == week) & (df['CHART_NAME'] == playlist)]
         df_week = df_week.iloc[0, 3]
-    except:
+    except Exception:
         df_week = 'N/A'
 
     df_week_prior = week_change_calculator(df_week, df_week_prior)
@@ -245,20 +306,24 @@ def apple_music_daily_top_100_gb(df, week_prior, week, playlist):
     return df_week_prior, df_week
 
 
-def shazam_top_200_gb(df, week_prior, week, playlist):
+def shazam_top_200_gb(df, playlist):
+
+    week_prior = week_prior_weeks[4]
+    week = week_prior_weeks[5] 
+
     try:
         df['DATE_KEY'] = df['DATE_KEY'].astype(str)
-    except:
+    except Exception:
         pass
     try:
         df_week_prior = df.loc[(df['DATE_KEY'] == week_prior) & (df['CHART_NAME'] == playlist)]
         df_week_prior = df_week_prior.iloc[0, 3]
-    except:
+    except Exception:
         df_week_prior = 'N/A'
     try:
         df_week = df.loc[(df['DATE_KEY'] == week) & (df['CHART_NAME'] == playlist)]
         df_week = df_week.iloc[0, 3]
-    except:
+    except Exception:
         df_week = 'N/A'
 
     df_week_prior = week_change_calculator(df_week, df_week_prior)
@@ -266,20 +331,24 @@ def shazam_top_200_gb(df, week_prior, week, playlist):
     return df_week_prior, df_week
 
 
-def shazam_top_200_ww(df, week_prior, week, playlist):
+def shazam_top_200_ww(df, playlist):
+
+    week_prior = week_prior_weeks[4]
+    week = week_prior_weeks[5] 
+
     try:
         df['DATE_KEY'] = df['DATE_KEY'].astype(str)
-    except:
+    except Exception:
         pass
     try:
         df_week_prior = df.loc[(df['DATE_KEY'] == week_prior) & (df['CHART_NAME'] == playlist)]
         df_week_prior = df_week_prior.iloc[0, 3]
-    except:
+    except Exception:
         df_week_prior = 'N/A'
     try:
         df_week = df.loc[(df['DATE_KEY'] == week) & (df['CHART_NAME'] == playlist)]
         df_week = df_week.iloc[0, 3]
-    except:
+    except Exception:
         df_week = 'N/A'
 
     df_week_prior = week_change_calculator(df_week, df_week_prior)
@@ -287,20 +356,29 @@ def shazam_top_200_ww(df, week_prior, week, playlist):
     return df_week_prior, df_week
 
 
-def occ_top_100(df, week_prior, week, playlist):
+def occ_top_100(df, playlist):
+
+    # Weekly chart ingest on Friday, run on Monday with back date.
+    week_prior = date.fromisoformat(week_prior_weeks[4])
+    week = date.fromisoformat(week_prior_weeks[5])
+    delta = timedelta(days=3)
+    week_prior = str(week_prior - delta)
+    week = str(week - delta)
+    
+
     try:
         df['DATE_KEY'] = df['DATE_KEY'].astype(str)
-    except:
+    except Exception:
         pass
     try:
         df_week_prior = df.loc[(df['DATE_KEY'] == week_prior) & (df['CHART_NAME'] == playlist)]
         df_week_prior = df_week_prior.iloc[0, 3]
-    except:
+    except Exception:
         df_week_prior = 'N/A'
     try:
         df_week = df.loc[(df['DATE_KEY'] == week) & (df['CHART_NAME'] == playlist)]
         df_week = df_week.iloc[0, 3]
-    except:
+    except Exception:
         df_week = 'N/A'
 
     df_week_prior = week_change_calculator(df_week, df_week_prior)
@@ -308,20 +386,20 @@ def occ_top_100(df, week_prior, week, playlist):
     return df_week_prior, df_week
 
 
-def create_row(dfs, week_prior, week):
+def create_row(dfs):
     data_row = []
     week_selector = [0, 1]
     data_point_gatherer = [
-        hot_hits_uk(dfs[0], week_prior, week, "Hot Hits UK"),
-        todays_top_hits(dfs[1], week_prior, week, "Todays Hits"),
-        todays_hits(dfs[2], week_prior, week, "Todays Top Hits"),
-        spotify_daily_200_gb_selector(dfs[3], week_prior, week, "Top 200"),
-        youtube_streams_summed(dfs[4], week_prior, week),
-        spotify_top_200_global(dfs[5], week_prior, week, "Top 200"),
-        apple_music_daily_top_100_gb(dfs[6], week_prior, week, "Top Songs"),
-        shazam_top_200_gb(dfs[7], week_prior, week, "SHAZAM TOP 200"),
-        shazam_top_200_ww(dfs[8], week_prior, week, "SHAZAM TOP 200"),
-        occ_top_100(dfs[9], week_prior, week, "Top 100 Combined Singles")
+        hot_hits_uk(dfs[0], "Hot Hits UK"),
+        todays_hits(dfs[1], "Todays Hits"),
+        todays_top_hits(dfs[2], "Todays Top Hits"),
+        spotify_daily_200_gb_selector(dfs[3], "Top 200"),
+        youtube_streams_summed(dfs[4]),
+        spotify_top_200_global(dfs[5], "Top 200"),
+        apple_music_daily_top_100_gb(dfs[6], "Top Songs"),
+        shazam_top_200_gb(dfs[7], "SHAZAM TOP 200"),
+        shazam_top_200_ww(dfs[8], "SHAZAM TOP 200"),
+        occ_top_100(dfs[9], "Top 100 Combined Singles")
     ]
 
     for x in data_point_gatherer:
@@ -333,8 +411,8 @@ def create_row(dfs, week_prior, week):
 
 def data_row_dict(row_data):
     data_row = {"Hot Hits UK (Spotify)": {"week prior change": row_data[0], "current week": row_data[1]},
-                "Today\'s Top Hits (Spotify)": {"week prior change": row_data[2], "current week": row_data[3]},
-                "Today\'s Hits (Apple)": {"week prior change": row_data[4], "current week": row_data[5]},
+                "Today\'s Hits (Apple)": {"week prior change": row_data[2], "current week": row_data[3]},
+                "Today\'s Top Hits (Spotify)": {"week prior change": row_data[4], "current week": row_data[5]},
                 "Spotify Daily Top 200 (GB)": {"week prior change": row_data[6], "current week": row_data[7]},
                 "Youtube Views (Global)": {"week prior change": row_data[8], "current week": row_data[9]},
                 "Spotify Daily Top 200 (Global)": {"week prior change": row_data[10], "current week": row_data[11]},
@@ -350,7 +428,7 @@ def create_daily_flash():
     index = pd.Index([], name='artist - song')
 
     columns = pd.MultiIndex.from_product(
-        [['Hot Hits UK (Spotify)', 'Today\'s Top Hits (Spotify)', 'Today\'s Hits (Apple)',
+        [['Hot Hits UK (Spotify)','Today\'s Hits (Apple)', 'Today\'s Top Hits (Spotify)',
           'Spotify Daily Top 200 (GB)', 'Youtube Views (Global)', 'Spotify Daily Top 200 (Global)',
           'Apple Music Daily Top 100 (GB)', 'Shazam Top 200 (GB)', 'Shazam Top 200 (Global)',
           'OCC Top 100 Singles'],
@@ -368,7 +446,9 @@ def add_row_to_daily_flash(data_row, daily_flash, artist, track_title):
     return daily_flash
 
 
-def daily_flash_to_excel(daily_flash_df, artist_track_dict, week):
+def daily_flash_to_excel(daily_flash_df, artist_track_dict):
+
+    week = datetime.now().date()
     row_len = len(artist_track_dict)
     # save work into excel format
     wb = Workbook()
