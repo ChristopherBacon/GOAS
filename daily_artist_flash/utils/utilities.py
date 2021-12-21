@@ -151,7 +151,7 @@ def todays_top_hits(df, playlist):
 
     week_prior = week_prior_weeks[0]
     week = week_prior_weeks[1]
-
+    
     try:
         df['DATE_KEY'] = df['DATE_KEY'].astype(str)
         df['PLAYLIST_NAME'] = df['PLAYLIST_NAME'].str.replace('\'', '', regex=True)
@@ -177,8 +177,11 @@ def todays_top_hits(df, playlist):
 
 def todays_hits(df, playlist):
 
-    week_prior = week_prior_weeks[0]
-    week = week_prior_weeks[1]    
+    week_prior = date.fromisoformat(week_prior_weeks[0])
+    week = date.fromisoformat(week_prior_weeks[1])
+    delta = timedelta(days=1)
+    week_prior = str(week_prior - delta)
+    week = str(week - delta) 
 
     try:
         df['DATE_KEY'] = df['DATE_KEY'].astype(str)
@@ -391,7 +394,7 @@ def create_row(dfs):
     week_selector = [0, 1]
     data_point_gatherer = [
         hot_hits_uk(dfs[0], "Hot Hits UK"),
-        todays_hits(dfs[1], "Todays Hits"),
+        todays_hits(dfs[1], "Éxitos de hoy"),
         todays_top_hits(dfs[2], "Todays Top Hits"),
         spotify_daily_200_gb_selector(dfs[3], "Top 200"),
         youtube_streams_summed(dfs[4]),

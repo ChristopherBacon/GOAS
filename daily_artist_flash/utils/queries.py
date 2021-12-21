@@ -26,22 +26,24 @@ def select_queries(artist, track_title):
     todays_hits_apple_uk = f"""
     
     SELECT tm.DATE_KEY
-       , p.PLAYLIST_NAME
-       , pr.ARTIST_DISPLAY_NAME
-       , tm.CUSTOMER_TRACK_TITLE
-       , tm.TRACK_POSITION
-       , tm.COUNTRY_CODE
-            
-    FROM DF_PROD_DAP_MISC.DAP.FACT_AUDIO_PLAYLIST_TRACK_METRICS tm   
-        inner join DF_PROD_DAP_MISC.DAP.DIM_PLAYLIST p on p.PLAYLIST_KEY = tm.PLAYLIST_KEY
-        inner join DF_PROD_DAP_MISC.DAP.DIM_PRODUCT pr on pr.PRODUCT_KEY = tm.PRODUCT_KEY
+     , p.PLAYLIST_NAME
+     , pr.ARTIST_DISPLAY_NAME
+     , tm.CUSTOMER_TRACK_TITLE
+     , tm.TRACK_POSITION
+     , tm.COUNTRY_CODE
+     , c.CUSTOMER_NAME
 
-    WHERE p.PLAYLIST_NAME LIKE 'Today''s Hits'
-        and pr.ARTIST_DISPLAY_NAME LIKE '%{artist}%'
+    FROM DF_PROD_DAP_MISC.DAP.FACT_AUDIO_PLAYLIST_TRACK_METRICS tm
+       inner join DF_PROD_DAP_MISC.DAP.DIM_PLAYLIST p on p.PLAYLIST_KEY = tm.PLAYLIST_KEY
+       inner join DF_PROD_DAP_MISC.DAP.DIM_PRODUCT pr on pr.PRODUCT_KEY = tm.PRODUCT_KEY
+       inner join DF_PROD_DAP_MISC.DAP.DIM_CUSTOMER c on c.CUSTOMER_KEY = tm.CUSTOMER_KEY
+ 
+    WHERE  pr.ARTIST_DISPLAY_NAME LIKE '%{artist}%'
         and tm.CUSTOMER_TRACK_TITLE LIKE '%{track_title}%'
         and tm.COUNTRY_CODE = 'GB'
-        and (tm.DATE_KEY = (dateadd(day,-7,(select max(DATE_KEY) from DF_PROD_DAP_MISC.DAP.FACT_AUDIO_PLAYLIST_TRACK_METRICS tm)))
-             or tm.DATE_KEY = (select max(DATE_KEY) from DF_PROD_DAP_MISC.DAP.FACT_AUDIO_PLAYLIST_TRACK_METRICS tm))
+        and p.PLAYLIST_ID = 'pl.f4d106fed2bd41149aaacabb233eb5eb'
+        and (tm.DATE_KEY = (dateadd(day,-8,(select max(DATE_KEY) from DF_PROD_DAP_MISC.DAP.FACT_AUDIO_PLAYLIST_TRACK_METRICS tm)))
+           or tm.DATE_KEY = (dateadd(day,-1,(select max(DATE_KEY) from DF_PROD_DAP_MISC.DAP.FACT_AUDIO_PLAYLIST_TRACK_METRICS tm))))
     
     """
 
