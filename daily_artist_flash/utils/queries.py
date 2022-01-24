@@ -232,7 +232,7 @@ def select_queries(artist, track_title):
 
     """
 
-    # updates on a Friday so whenever run have to correct dateadd - back to Friday (-9, -2) week prior and Friday just gone, run on a Monday
+    # updates on a Friday so whenever run have to correct dateadd - back to Friday (-9, -2) week prior and Friday just gone, run on a Monday.
 
     occ_top_100 = f"""
 
