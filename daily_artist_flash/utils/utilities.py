@@ -361,10 +361,10 @@ def shazam_top_200_ww(df, playlist):
 
 def occ_top_100(df, playlist):
 
-    # Weekly chart ingest on Friday, run on Monday with back date.
+    # Weekly chart ingest on Friday, run on Monday with back date. delta = 2 if run on a Mon.
     week_prior = date.fromisoformat(week_prior_weeks[4])
     week = date.fromisoformat(week_prior_weeks[5])
-    delta = timedelta(days=3)
+    delta = timedelta(days=2)
     week_prior = str(week_prior - delta)
     week = str(week - delta)
     

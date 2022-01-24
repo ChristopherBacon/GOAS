@@ -232,7 +232,8 @@ def select_queries(artist, track_title):
 
     """
 
-    # updates on a Friday so whenever run have to correct dateadd - back to Friday
+    # updates on a Friday so whenever run have to correct dateadd - back to Friday (-9, -2) week prior and Friday just gone, run on a Monday
+
     occ_top_100 = f"""
 
     SELECT w.DATE_KEY
@@ -253,8 +254,8 @@ def select_queries(artist, track_title):
         inner join DF_PROD_DAP_MISC.DAP.DIM_PRODUCT p on p.PRODUCT_KEY = w.PRODUCT_KEY
     
     WHERE c.ACCOUNT = 'OCC'
-    and (w.DATE_KEY = (dateadd(day,-10,(select max(DATE_KEY) from DF_PROD_DAP_MISC.DAP.FACT_CHARTS_WEEKLY w)))
-        or w.DATE_KEY = (dateadd(day,-3,(select max(DATE_KEY) from DF_PROD_DAP_MISC.DAP.FACT_CHARTS_WEEKLY w))))
+    and (w.DATE_KEY = (dateadd(day,-9,(select max(DATE_KEY) from DF_PROD_DAP_MISC.DAP.FACT_CHARTS_WEEKLY w)))
+        or w.DATE_KEY = (dateadd(day,-2,(select max(DATE_KEY) from DF_PROD_DAP_MISC.DAP.FACT_CHARTS_WEEKLY w))))
     and c.CHART_NAME = 'Top 100 Combined Singles'
     and w.TITLE = '{track_title}'
     and p.ARTIST_DISPLAY_NAME LIKE '%{artist}%'
