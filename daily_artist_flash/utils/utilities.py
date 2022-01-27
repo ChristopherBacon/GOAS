@@ -552,7 +552,7 @@ def daily_flash_to_excel(daily_flash_df, artist_track_dict):
                     sheet.cell(row=row, column=col).fill = red_fill
 
 
-    # Youtube Exception
+    # Youtube Exception colours reversed +changes good.
     for col in range(10, 11):
         for row in range(1, 4+row_len):
             if type(sheet.cell(row=row, column=col).value) == int:
