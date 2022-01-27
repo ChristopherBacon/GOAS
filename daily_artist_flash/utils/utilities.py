@@ -6,7 +6,10 @@ from dotenv import load_dotenv
 import os
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl import Workbook, load_workbook
-from openpyxl.styles import Font, PatternFill
+from openpyxl.styles import Font, PatternFill, Side
+from openpyxl.styles import Alignment
+from openpyxl.styles.borders import Border
+from openpyxl.utils import get_column_letter
 from datetime import datetime, timedelta
 from utils.queries import fact_audio_playlist_track_metrics_latest_ingest, fact_charts_daily_latest_ingest, fact_charts_weekly_latest_ingest, fact_audio_streaming_latest_ingest
 
@@ -170,7 +173,6 @@ def todays_top_hits(df, playlist):
         df_week = 'N/A'
 
     df_week_prior = week_change_calculator(df_week, df_week_prior)
-
 
     return df_week_prior, df_week
 
@@ -413,18 +415,19 @@ def create_row(dfs):
 
 
 def data_row_dict(row_data):
-    data_row = {"Hot Hits UK (Spotify)": {"week prior change": row_data[0], "current week": row_data[1]},
-                "Today\'s Hits (Apple)": {"week prior change": row_data[2], "current week": row_data[3]},
-                "Today\'s Top Hits (Spotify)": {"week prior change": row_data[4], "current week": row_data[5]},
-                "Spotify Daily Top 200 (GB)": {"week prior change": row_data[6], "current week": row_data[7]},
-                "Youtube Views (Global)": {"week prior change": row_data[8], "current week": row_data[9]},
-                "Spotify Daily Top 200 (Global)": {"week prior change": row_data[10], "current week": row_data[11]},
-                "Apple Music Daily Top 100 (GB)": {"week prior change": row_data[12], "current week": row_data[13]},
-                "Shazam Top 200 (GB)": {"week prior change": row_data[14], "current week": row_data[15]},
-                "Shazam Top 200 (Global)": {"week prior change": row_data[16], "current week": row_data[17]},
-                "OCC Top 100 Singles": {"week prior change": row_data[18], "current week": row_data[19]}
-                }
+    data_row = {"Hot Hits UK (Spotify)": {"": row_data[0], "current week": row_data[1]},
+               "Today\'s Hits (Apple)": {"": row_data[2], "current week": row_data[3]},
+               "Today\'s Top Hits (Spotify)": {"": row_data[4], "current week": row_data[5]},
+               "Spotify Daily Top 200 (GB)": {"": row_data[6], "current week": row_data[7]},
+               "Youtube Views (Global)": {"": row_data[8], "current week": row_data[9]},
+               "Spotify Daily Top 200 (Global)": {"": row_data[10], "current week": row_data[11]},
+               "Apple Music Daily Top 100 (GB)": {"": row_data[12], "current week": row_data[13]},
+               "Shazam Top 200 (GB)": {"": row_data[14], "current week": row_data[15]},
+               "Shazam Top 200 (Global)": {"": row_data[16], "current week": row_data[17]},
+               "OCC Top 100 Singles": {"": row_data[18], "current week": row_data[19]}
+               }
     return data_row
+
 
 
 def create_daily_flash():
@@ -435,7 +438,7 @@ def create_daily_flash():
           'Spotify Daily Top 200 (GB)', 'Youtube Views (Global)', 'Spotify Daily Top 200 (Global)',
           'Apple Music Daily Top 100 (GB)', 'Shazam Top 200 (GB)', 'Shazam Top 200 (Global)',
           'OCC Top 100 Singles'],
-         ['week prior change', 'current week']], names=['source', 'week'])
+         ['current week', '']], names=['source', 'week'])
 
     daily_flash = pd.DataFrame(columns=columns, index=index)
 
@@ -449,22 +452,80 @@ def add_row_to_daily_flash(data_row, daily_flash, artist, track_title):
     return daily_flash
 
 
+def format_num(val, none_as_na=False, prefer_format=None, ignore_pref_if_large=False):
+    try:
+        int(val)
+    except ValueError as ve:
+        return val
+    except TypeError as te:
+        if val is None and none_as_na:
+            return 'N/A'
+        else:
+            print(te)
+    
+    if (prefer_format == 'k') and (ignore_pref_if_large) and (len(str(int(val))) < 7):
+        new_val = round((val / 1e3), 2)
+        return str(new_val) + 'k'
+    elif (prefer_format == 'k') and not ignore_pref_if_large:
+        new_val = round((val / 1e3), 2)
+        return str(new_val) + 'k'
+        
+    elif len(str(val)) > 10:
+        new_val = round((val / 1e9), 2)
+        return str(new_val) + 'bn'
+        
+    elif len(str(val)) > 5:
+        new_val = round((val / 1e6), 2)
+        return str(new_val) + 'm'
+        
+    elif len(str(val)) > 3:
+        new_val = round((val / 1e3), 2)
+        return str(new_val) + 'k'
+        
+    else:
+        return str(val)
+
+
 def daily_flash_to_excel(daily_flash_df, artist_track_dict):
 
     week = datetime.now().date()
     row_len = len(artist_track_dict)
     # save work into excel format
     wb = Workbook()
-    ws = wb.create_sheet('Daily Flash')
-    wb.active = ws
+    ws = wb.create_sheet('Daily Flash', 0)
+    ws = wb.active
+    
+    # column A artist and track width wider
+    for col in range(1,2):
+        ws.column_dimensions[get_column_letter(col)].width = 50
+
+    # rest of columns spacious tor title
+    for col in range(3,24):
+        ws.column_dimensions[get_column_letter(col)].width = 15
 
     rows = dataframe_to_rows(daily_flash_df, index=True, header=True)
     for r in rows:
         ws.append(r)
 
+    # cell formatting params
     font = Font(bold=True)
     red_fill = PatternFill(patternType='solid', fgColor='f4cccc')
     green_fill = PatternFill(patternType='solid', fgColor='d9ead3')
+
+    side = Side(border_style='thin', color='00FFFFFF')
+    no_border = Border(
+    left=side, 
+    right=side, 
+    top=side, 
+    bottom=side,
+    )
+    centered = Alignment(horizontal='center', vertical='center')
+
+    # no border for cells and center text
+    for col in range(1, 24):
+        for row in range(1,row_len+4):
+            ws.cell(row=row,column=col).border = no_border
+            ws.cell(row=row,column=col).alignment = centered
 
     # header rows bold
     for col in range(1, 24):
@@ -478,33 +539,35 @@ def daily_flash_to_excel(daily_flash_df, artist_track_dict):
 
     sheet = wb['Daily Flash']
 
-    # red or green fill
-    # add in len dictionary of artists
+    # fill cell colours based on changes, -changes moving up chart is green, \
+    # +changes going down chart red, no move no colour
     for col in range(2, 24, 2):
-        for row in range(1, 4 + row_len):
-            if type(sheet.cell(row=row, column=col + 1).value) == int:
-                if sheet.cell(row=row, column=col).value < 0:
-                    sheet.cell(row=row, column=col + 1).fill = green_fill
-                elif sheet.cell(row=row, column=col).value > 0:
-                    sheet.cell(row=row, column=col + 1).fill = red_fill
-                elif sheet.cell(row=row, column=col).value == 0:
+        for row in range(4, 4+row_len):
+            if type(sheet.cell(row=row, column=col+1).value) == int:
+                if sheet.cell(row=row, column=col+1).value < 0:
+                    sheet.cell(row=row, column=col).fill = green_fill
+                elif sheet.cell(row=row, column=col+1).value == 0:
                     pass
-                elif sheet.cell(row=row, column=col).value == 'N/A':
-                    pass
+                elif sheet.cell(row=row, column=col+1).value > 0:
+                    sheet.cell(row=row, column=col).fill = red_fill
+
 
     # Youtube Exception
     for col in range(10, 11):
-        for row in range(1, 4 + row_len):
-            if type(sheet.cell(row=row, column=col + 1).value) == int:
-                if sheet.cell(row=row, column=col).value < 0:
-                    sheet.cell(row=row, column=col + 1).fill = red_fill
-                elif sheet.cell(row=row, column=col).value > 0:
-                    sheet.cell(row=row, column=col + 1).fill = green_fill
+        for row in range(1, 4+row_len):
+            if type(sheet.cell(row=row, column=col).value) == int:
+                if sheet.cell(row=row, column=col+1).value < 0:
+                    sheet.cell(row=row, column=col).fill = red_fill
+                elif sheet.cell(row=row, column=col+1).value > 0:
+                    sheet.cell(row=row, column=col).fill = green_fill
                 elif sheet.cell(row=row, column=col).value == 0:
                     pass
                 elif sheet.cell(row=row, column=col).value == 'N/A':
                     pass
 
+
+
+    
     title = f"daily_flash_{week}.xlsx"
     wb.save(title)
 
