@@ -234,7 +234,7 @@ def select_queries(artist, track_title):
 
     # updates on a Friday so whenever run have to correct dateadd - back to Friday (-9, -2) week prior and Friday just gone, run on a Monday.
 
-    occ_top_100 = f"""
+    occ_top_100_singles = f"""
 
     SELECT w.DATE_KEY
         , w.TITLE
@@ -254,16 +254,78 @@ def select_queries(artist, track_title):
         inner join DF_PROD_DAP_MISC.DAP.DIM_PRODUCT p on p.PRODUCT_KEY = w.PRODUCT_KEY
     
     WHERE c.ACCOUNT = 'OCC'
-    and (w.DATE_KEY = (dateadd(day,-9,(select max(DATE_KEY) from DF_PROD_DAP_MISC.DAP.FACT_CHARTS_WEEKLY w)))
-        or w.DATE_KEY = (dateadd(day,-2,(select max(DATE_KEY) from DF_PROD_DAP_MISC.DAP.FACT_CHARTS_WEEKLY w))))
+    and (w.DATE_KEY = (dateadd(day,-13,(select max(DATE_KEY) from DF_PROD_DAP_MISC.DAP.FACT_CHARTS_WEEKLY w)))
+        or w.DATE_KEY = (dateadd(day,-6,(select max(DATE_KEY) from DF_PROD_DAP_MISC.DAP.FACT_CHARTS_WEEKLY w))))
     and c.CHART_NAME = 'Top 100 Combined Singles'
     and w.TITLE = '{track_title}'
     and p.ARTIST_DISPLAY_NAME LIKE '%{artist}%'
 
     """
 
+    dsp_streams = f"""
+    
+    SELECT w.DATE_KEY
+        , c.CUSTOMER_NAME
+        , dp.ARTIST_DISPLAY_NAME
+        , dp.PRODUCT_TITLE
+        , sum(case when COUNTRY_CODE = 'GB' then STREAM_COUNT else 0 end) streams_uk
+        , sum(STREAM_COUNT)                                               global_streams
+
+
+    from DF_PROD_DAP_MISC.DAP.FACT_AUDIO_STREAMING_AGG_WEEKLY w
+            inner join DF_PROD_DAP_MISC.DAP.REL_PRODUCT_ASSET_SIBLING pas on pas.PRODUCT_KEY = w.PRODUCT_KEY
+            inner join DF_PROD_DAP_MISC.DAP.DIM_ARTIST da on da.ARTIST_KEY = pas.AFG_PRIMARY_ARTIST_ID
+            inner join DF_PROD_DAP_MISC.DAP.DIM_CUSTOMER c on c.CUSTOMER_KEY = w.CUSTOMER_KEY
+            inner join DF_PROD_DAP_MISC.DAP.DIM_PRODUCT dp on dp.PRODUCT_KEY = w.PRODUCT_KEY
+            
+    WHERE c.CUSTOMER_KEY in (1, 2, 5, 119735, 155643)
+    and dp.PRODUCT_TITLE = '{track_title}'
+    and dp.ARTIST_DISPLAY_NAME LIKE '%{artist}%'
+      and (w.DATE_KEY = (dateadd(day,-7,(select max(DATE_KEY) from DF_PROD_DAP_MISC.DAP.FACT_AUDIO_STREAMING_AGG_WEEKLY w)))
+        or w.DATE_KEY = (select max(DATE_KEY) from DF_PROD_DAP_MISC.DAP.FACT_AUDIO_STREAMING_AGG_WEEKLY w))
+    GROUP BY 1, 2, 3, 4
+    
+    """
+
+    youtube_ugc_pgc = f"""
+    
+    select fas.date_key
+        , dp.ARTIST_DISPLAY_NAME
+        , dp.PRODUCT_TITLE
+        , case
+            when fas.customer_key = 140003 and cd.account_consumer_dtl_one = 'Premium'
+                then 'YouTube Official'
+            when fas.customer_key = 140003 and cd.account_consumer_dtl_one = 'UGC'
+                then 'YouTube UGC'
+            else cus.customer_name
+        end                  as customer_name
+        , sum(Stream_Count) as Streams
+
+
+    from  DF_PROD_DAP_MISC.DAP.FACT_AUDIO_STREAMING_AGG_WEEKLY fas
+            inner join DF_PROD_DAP_MISC.DAP.dim_consumer_details cd on fas.consumer_dtl_key = cd.consumer_dtl_key
+            inner join DF_PROD_DAP_MISC.DAP.dim_product prod on fas.product_key = prod.product_key
+            inner join DF_PROD_DAP_MISC.DAP.dim_customer cus on fas.customer_key = cus.customer_key
+            inner join DF_PROD_DAP_MISC.DAP.REL_PRODUCT_ASSET_SIBLING pas on pas.PRODUCT_KEY = fas.PRODUCT_KEY
+            inner join DF_PROD_DAP_MISC.DAP.DIM_ARTIST da on da.ARTIST_KEY = pas.AFG_PRIMARY_ARTIST_ID
+            inner join DF_PROD_DAP_MISC.DAP.DIM_PRODUCT dp on dp.PRODUCT_KEY = fas.PRODUCT_KEY
+
+    where 1 = 1
+    and (fas.DATE_KEY = (dateadd(day,-7,(select max(DATE_KEY) from DF_PROD_DAP_MISC.DAP.FACT_AUDIO_STREAMING_AGG_WEEKLY fas)))
+            or fas.DATE_KEY = (select max(DATE_KEY) from DF_PROD_DAP_MISC.DAP.FACT_AUDIO_STREAMING_AGG_WEEKLY fas))
+    and not (fas.customer_key = 140003 and cd.account_consumer_dtl_one = 'Premium' and prod.product_category = 'Audio')
+    and fas.CUSTOMER_KEY = 140003
+    and dp.PRODUCT_TITLE = '{track_title}'
+    and dp.ARTIST_DISPLAY_NAME = '{artist}'
+
+    group by 1, 2, 3, 4
+
+    """
+    
+
     return hot_hits_uk, todays_hits_apple_uk, todays_top_hits_spotify, spotify_daily_top_200_gb, query_total_streams_dsp, \
-           spotify_top_200_global, apple_music_daily_top_100_gb, shazam_top_200_gb, shazam_top_200_ww, occ_top_100
+           spotify_top_200_global, apple_music_daily_top_100_gb, shazam_top_200_gb, shazam_top_200_ww, occ_top_100_singles, dsp_streams, \
+            youtube_ugc_pgc
 
 #Appears to be a 2 day lag on all dates.
 
@@ -306,6 +368,16 @@ SELECT max(DATE_KEY) Date
 FROM DF_PROD_DAP_MISC.DAP.FACT_AUDIO_STREAMING s
 
 WHERE DATE_KEY = (dateadd(day,-2,(select max(DATE_KEY) from DF_PROD_DAP_MISC.DAP.FACT_AUDIO_STREAMING s)))
+
+"""
+
+fact_audio_streaming_agg_weekly_ingest = """
+
+SELECT max(DATE_KEY) Date
+
+FROM DF_PROD_DAP_MISC.DAP.FACT_AUDIO_STREAMING_AGG_WEEKLY s
+
+WHERE DATE_KEY = (select max(DATE_KEY) from DF_PROD_DAP_MISC.DAP.FACT_AUDIO_STREAMING_AGG_WEEKLY s)
 
 """
 

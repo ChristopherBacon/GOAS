@@ -11,7 +11,8 @@ from openpyxl.styles import Alignment
 from openpyxl.styles.borders import Border
 from openpyxl.utils import get_column_letter
 from datetime import datetime, timedelta
-from utils.queries import fact_audio_playlist_track_metrics_latest_ingest, fact_charts_daily_latest_ingest, fact_charts_weekly_latest_ingest, fact_audio_streaming_latest_ingest
+from utils.queries import fact_audio_playlist_track_metrics_latest_ingest, fact_charts_daily_latest_ingest, \
+                        fact_charts_weekly_latest_ingest, fact_audio_streaming_latest_ingest, fact_audio_streaming_agg_weekly_ingest
 
 # environment variables from file
 load_dotenv()
@@ -81,11 +82,14 @@ def get_week_prior_dates_and_week_dates_from_sflake_ingests():
     fact_charts_daily_week_prior, fact_charts_daily_week = get_week_week_prior_dates(fact_charts_daily_latest_ingest)
     fact_charts_weekly_week_prior, fact_charts_weekly_week = get_week_week_prior_dates(fact_charts_weekly_latest_ingest)
     fact_audio_streaming_week_prior, fact_audio_streaming_week = get_week_week_prior_dates(fact_audio_streaming_latest_ingest)
-    
+    fact_audio_streaming_agg_weekly_week_prior, fact_audio_streaming_agg_weekly_week = get_week_week_prior_dates(fact_audio_streaming_agg_weekly_ingest)
+
+
     return fact_audio_playlist_track_metrics_week_prior, fact_audio_playlist_track_metrics_week, \
             fact_charts_daily_week_prior, fact_charts_daily_week, \
             fact_charts_weekly_week_prior, fact_charts_weekly_week, \
-            fact_audio_streaming_week_prior, fact_audio_streaming_week
+            fact_audio_streaming_week_prior, fact_audio_streaming_week, \
+            fact_audio_streaming_agg_weekly_week_prior, fact_audio_streaming_agg_weekly_week
 
 week_prior_weeks = get_week_prior_dates_and_week_dates_from_sflake_ingests()
 
@@ -100,11 +104,15 @@ def get_query_dfs(selected_queries, cursor):
     apple_music_daily_top_100_gb_df = fetch_data_as_df(cursor, selected_queries[6])
     shazam_top_200_gb_df = fetch_data_as_df(cursor, selected_queries[7])
     shazam_top_200_ww_df = fetch_data_as_df(cursor, selected_queries[8])
-    occ_top_100_df = fetch_data_as_df(cursor, selected_queries[9])
+    occ_top_100_singles_df = fetch_data_as_df(cursor, selected_queries[9])
+    dsp_streams_df = fetch_data_as_df(cursor, selected_queries[10])
+    youtube_ugc_pgc_df = fetch_data_as_df(cursor, selected_queries[11])
+
     
     
     return hot_hits_uk_df, todays_hits_apple_uk_df, todays_top_hits_spotify_df, spotify_daily_top_200_gb_df, query_total_streams_dsp_df, \
-           spotify_daily_top_200_ww_df, apple_music_daily_top_100_gb_df, shazam_top_200_gb_df, shazam_top_200_ww_df, occ_top_100_df
+           spotify_daily_top_200_ww_df, apple_music_daily_top_100_gb_df, shazam_top_200_gb_df, shazam_top_200_ww_df, occ_top_100_singles_df, dsp_streams_df, \
+               youtube_ugc_pgc_df
 
 
 def week_change_calculator(df_week_prior, df_week):
@@ -145,7 +153,7 @@ def hot_hits_uk(df, playlist):
     except Exception:
         df_week = 'N/A'
 
-    df_week_prior = week_change_calculator(df_week, df_week_prior)
+    df_week_prior = week_change_calculator(df_week_prior, df_week)
 
     return df_week_prior, df_week
 
@@ -172,7 +180,7 @@ def todays_top_hits(df, playlist):
     except Exception:
         df_week = 'N/A'
 
-    df_week_prior = week_change_calculator(df_week, df_week_prior)
+    df_week_prior = week_change_calculator(df_week_prior, df_week)
 
     return df_week_prior, df_week
 
@@ -202,7 +210,7 @@ def todays_hits(df, playlist):
     except Exception:
         df_week = 'N/A'
 
-    df_week_prior = week_change_calculator(df_week, df_week_prior)
+    df_week_prior = week_change_calculator(df_week_prior, df_week)
 
     return df_week_prior, df_week
 
@@ -227,7 +235,7 @@ def spotify_daily_200_gb_selector(df, playlist):
     except Exception:
         df_week = 'N/A'
 
-    df_week_prior = week_change_calculator(df_week, df_week_prior)
+    df_week_prior = week_change_calculator(df_week_prior, df_week)
 
     return df_week_prior, df_week
 
@@ -252,7 +260,7 @@ def youtube_streams_summed(df):
     except Exception:
         df_week = 'N/A'
 
-    df_week_prior = week_change_calculator(df_week, df_week_prior)
+    df_week_prior = week_change_calculator(df_week_prior, df_week)
 
     return df_week_prior, df_week
 
@@ -277,7 +285,7 @@ def spotify_top_200_global(df, playlist):
     except Exception:
         df_week = 'N/A'
 
-    df_week_prior = week_change_calculator(df_week, df_week_prior)
+    df_week_prior = week_change_calculator(df_week_prior, df_week)
 
     return df_week_prior, df_week
 
@@ -306,7 +314,7 @@ def apple_music_daily_top_100_gb(df, playlist):
     except Exception:
         df_week = 'N/A'
 
-    df_week_prior = week_change_calculator(df_week, df_week_prior)
+    df_week_prior = week_change_calculator(df_week_prior, df_week)
 
     return df_week_prior, df_week
 
@@ -331,7 +339,7 @@ def shazam_top_200_gb(df, playlist):
     except Exception:
         df_week = 'N/A'
 
-    df_week_prior = week_change_calculator(df_week, df_week_prior)
+    df_week_prior = week_change_calculator(df_week_prior, df_week)
 
     return df_week_prior, df_week
 
@@ -356,20 +364,19 @@ def shazam_top_200_ww(df, playlist):
     except Exception:
         df_week = 'N/A'
 
-    df_week_prior = week_change_calculator(df_week, df_week_prior)
+    df_week_prior = week_change_calculator(df_week_prior, df_week)
 
     return df_week_prior, df_week
 
 
-def occ_top_100(df, playlist):
+def occ_top_100_singles(df, playlist):
 
-    # Weekly chart ingest on Friday, run on Monday with back date. delta = 2 if run on a Mon
+    # Weekly chart ingest on Friday, run on Monday with back date. delta = 3 if run on a Mon
     week_prior = date.fromisoformat(week_prior_weeks[4])
     week = date.fromisoformat(week_prior_weeks[5])
-    delta = timedelta(days=2)
+    delta = timedelta(days=0)
     week_prior = str(week_prior - delta)
     week = str(week - delta)
-    
 
     try:
         df['DATE_KEY'] = df['DATE_KEY'].astype(str)
@@ -386,7 +393,145 @@ def occ_top_100(df, playlist):
     except Exception:
         df_week = 'N/A'
 
-    df_week_prior = week_change_calculator(df_week, df_week_prior)
+    df_week_prior = week_change_calculator(df_week_prior, df_week)
+
+    return df_week_prior, df_week
+
+def dsp_streams_uk(df, customer_name):
+
+    # Weekly chart ingest on Friday, run on Monday with back date. delta = 2 if run on a Mon
+    week_prior = date.fromisoformat(week_prior_weeks[8])
+    week = date.fromisoformat(week_prior_weeks[9])
+    delta = timedelta(days=0)
+    week_prior = str(week_prior - delta)
+    week = str(week - delta)
+
+    try:
+        df['DATE_KEY'] = df['DATE_KEY'].astype(str)
+    except Exception:
+        pass
+    try:
+        df_week_prior = df.loc[(df['DATE_KEY'] == week_prior) & (df['CUSTOMER_NAME'] == customer_name)]
+        df_week_prior = df_week_prior.iloc[0, 4]
+    except Exception:
+        df_week_prior = 'N/A'
+    try:
+        df_week = df.loc[(df['DATE_KEY'] == week) & (df['CUSTOMER_NAME'] == customer_name)]
+        df_week = df_week.iloc[0, 4]
+    except Exception:
+        df_week = 'N/A'
+
+    df_week_prior = week_change_calculator(df_week_prior, df_week)
+
+    return df_week_prior, df_week
+
+def dsp_streams_global(df, customer_name):
+
+    # Weekly chart ingest on Friday, run on Monday with back date. delta = 2 if run on a Mon
+    week_prior = date.fromisoformat(week_prior_weeks[8])
+    week = date.fromisoformat(week_prior_weeks[9])
+    delta = timedelta(days=0)
+    week_prior = str(week_prior - delta)
+    week = str(week - delta)
+
+    try:
+        df['DATE_KEY'] = df['DATE_KEY'].astype(str)
+    except Exception:
+        pass
+    try:
+        df_week_prior = df.loc[(df['DATE_KEY'] == week_prior) & (df['CUSTOMER_NAME'] == customer_name)]
+        df_week_prior = df_week_prior.iloc[0, 5]
+    except Exception:
+        df_week_prior = 'N/A'
+    try:
+        df_week = df.loc[(df['DATE_KEY'] == week) & (df['CUSTOMER_NAME'] == customer_name)]
+        df_week = df_week.iloc[0, 5]
+    except Exception:
+        df_week = 'N/A'
+
+    df_week_prior = week_change_calculator(df_week_prior, df_week)
+
+    return df_week_prior, df_week
+
+def dsp_streams_total(df, customer_name):
+
+    # Weekly chart ingest on Friday, run on Monday with back date. delta = 2 if run on a Mon
+    week_prior = date.fromisoformat(week_prior_weeks[8])
+    week = date.fromisoformat(week_prior_weeks[9])
+    delta = timedelta(days=0)
+    week_prior = str(week_prior - delta)
+    week = str(week - delta)
+
+    try:
+        df['DATE_KEY'] = df['DATE_KEY'].astype(str)
+    except Exception:
+        pass
+    try:
+        df_week_prior = df.loc[(df['DATE_KEY'] == week_prior) & (df['CUSTOMER_NAME'] == customer_name)]
+        df_week_prior = df_week_prior.iloc[0, 5]
+    except Exception:
+        df_week_prior = 'N/A'
+    try:
+        df_week = df.loc[(df['DATE_KEY'] == week) & (df['CUSTOMER_NAME'] == customer_name)]
+        df_week = df_week.iloc[0, 5]
+    except Exception:
+        df_week = 'N/A'
+
+    df_week_prior = week_change_calculator(df_week_prior, df_week)
+
+    return df_week_prior, df_week
+
+def dsp_streams_total(df, customer_name):
+
+    # Weekly chart ingest on Friday, run on Monday with back date. delta = 2 if run on a Mon
+    week_prior = '2022-01-20'
+    week = '2022-01-27'
+
+    try:
+        df['DATE_KEY'] = df['DATE_KEY'].astype(str)
+    except Exception:
+        pass
+    try:
+        df_week_prior = df.loc[(df['DATE_KEY'] == week_prior) & (df['CUSTOMER_NAME'] == customer_name)]
+        df_week_prior = df_week_prior.iloc[0, 4] + df_week_prior.iloc[0, 5]
+
+    except Exception:
+        df_week_prior = 'N/A'
+    try:
+        df_week = df.loc[(df['DATE_KEY'] == week) & (df['CUSTOMER_NAME'] == customer_name)]
+        df_week = df_week.iloc[0, 4] + df_week.iloc[0, 5]
+    except Exception:
+        df_week = 'N/A'
+
+    df_week_prior = week_change_calculator(df_week_prior, df_week)
+
+    return df_week_prior, df_week
+
+def youtube_ugc_pgc_streams(df, customer_name):
+
+    # Weekly chart ingest on Friday, run on Monday with back date. delta = 2 if run on a Mon
+    week_prior = date.fromisoformat(week_prior_weeks[8])
+    week = date.fromisoformat(week_prior_weeks[9])
+    delta = timedelta(days=0)
+    week_prior = str(week_prior - delta)
+    week = str(week - delta)
+
+    try:
+        df['DATE_KEY'] = df['DATE_KEY'].astype(str)
+    except Exception:
+        pass
+    try:
+        df_week_prior = df.loc[(df['DATE_KEY'] == week_prior) & (df['CUSTOMER_NAME'] == customer_name)]
+        df_week_prior = df_week_prior.iloc[0, 4]
+    except Exception:
+        df_week_prior = 'N/A'
+    try:
+        df_week = df.loc[(df['DATE_KEY'] == week) & (df['CUSTOMER_NAME'] == customer_name)]
+        df_week = df_week.iloc[0, 4]
+    except Exception:
+        df_week = 'N/A'
+
+    df_week_prior = week_change_calculator(df_week_prior, df_week)
 
     return df_week_prior, df_week
 
@@ -404,7 +549,24 @@ def create_row(dfs):
         apple_music_daily_top_100_gb(dfs[6], "Top Songs"),
         shazam_top_200_gb(dfs[7], "SHAZAM TOP 200"),
         shazam_top_200_ww(dfs[8], "SHAZAM TOP 200"),
-        occ_top_100(dfs[9], "Top 100 Combined Singles")
+        occ_top_100_singles(dfs[9], "Top 100 Combined Singles"),
+        dsp_streams_uk(dfs[10], "Spotify"),
+        dsp_streams_global(dfs[10], "Spotify"),
+        dsp_streams_total(dfs[10], "Spotify"),
+        dsp_streams_uk(dfs[10], "Apple Music"),
+        dsp_streams_global(dfs[10], "Apple Music"),
+        dsp_streams_total(dfs[10], "Apple Music"),
+        dsp_streams_uk(dfs[10], "Amazon Prime"),
+        dsp_streams_global(dfs[10], "Amazon Prime"),
+        dsp_streams_total(dfs[10], "Amazon Prime"),
+        dsp_streams_uk(dfs[10], "Amazon Ad Supported"),
+        dsp_streams_global(dfs[10], "Amazon Ad Supported"),
+        dsp_streams_total(dfs[10], "Amazon Ad Supported"),
+        dsp_streams_uk(dfs[10], "Amazon Unlimited"),
+        dsp_streams_global(dfs[10], "Amazon Unlimited"),
+        dsp_streams_total(dfs[10], "Amazon Unlimited"),
+        youtube_ugc_pgc_streams(dfs[11], "YouTube Official"),
+        youtube_ugc_pgc_streams(dfs[11], "YouTube UGC"),
     ]
 
     for x in data_point_gatherer:
@@ -424,7 +586,24 @@ def data_row_dict(row_data):
                "Apple Music Daily Top 100 (GB)": {"": row_data[12], "current week": row_data[13]},
                "Shazam Top 200 (GB)": {"": row_data[14], "current week": row_data[15]},
                "Shazam Top 200 (Global)": {"": row_data[16], "current week": row_data[17]},
-               "OCC Top 100 Singles": {"": row_data[18], "current week": row_data[19]}
+               "OCC Top 100 Singles": {"": row_data[18], "current week": row_data[19]},
+               "Spotify Weekly Streams (GB)": {"": row_data[20], "current week": row_data[21]},
+               "Spotify Weekly Streams (Global)": {"": row_data[22], "current week": row_data[23]},
+               "Spotify Weekly Streams (Total)": {"": row_data[24], "current week": row_data[25]},
+               "Apple Music Weekly Streams (GB)": {"": row_data[26], "current week": row_data[27]},
+               "Apple Music Weekly Streams (Global)": {"": row_data[28], "current week": row_data[29]},
+               "Apple Music Weekly Streams (Total)": {"": row_data[30], "current week": row_data[31]},
+               "Amazon Prime Weekly Streams (GB)": {"": row_data[32], "current week": row_data[33]},
+               "Amazon Prime Weekly Streams (Global)": {"": row_data[34], "current week": row_data[35]},
+               "Amazon Prime Weekly Streams (Total)": {"": row_data[36], "current week": row_data[37]},
+               "Amazon Ad Supported Weekly Streams (GB)": {"": row_data[38], "current week": row_data[39]},
+               "Amazon Ad Supported Weekly Streams (Global)": {"": row_data[40], "current week": row_data[41]},
+               "Amazon Ad Supported Weekly Streams (Total)": {"": row_data[42], "current week": row_data[43]},
+               "Amazon Unlimited Weekly Streams (GB)": {"": row_data[44], "current week": row_data[45]},
+               "Amazon Unlimited Weekly Streams (Global)": {"": row_data[46], "current week": row_data[47]},
+               "Amazon Unlimited Weekly Streams (Total)": {"": row_data[48], "current week": row_data[49]},
+               "YouTube Official Streams (Total)": {"": row_data[50], "current week": row_data[51]},
+               "YouTube UGC Streams (Total)": {"": row_data[52], "current week": row_data[53]},
                }
     return data_row
 
@@ -437,8 +616,13 @@ def create_daily_flash():
         [['Hot Hits UK (Spotify)','Today\'s Hits (Apple)', 'Today\'s Top Hits (Spotify)',
           'Spotify Daily Top 200 (GB)', 'Youtube Views (Global)', 'Spotify Daily Top 200 (Global)',
           'Apple Music Daily Top 100 (GB)', 'Shazam Top 200 (GB)', 'Shazam Top 200 (Global)',
-          'OCC Top 100 Singles'],
-         ['current week', '']], names=['source', 'week'])
+          'OCC Top 100 Singles', 'Spotify Weekly Streams (GB)', 'Spotify Weekly Streams (Global)', 'Spotify Weekly Streams (Total)',
+          'Apple Music Weekly Streams (GB)', 'Apple Music Weekly Streams (Global)', 'Apple Music Weekly Streams (Total)',
+          'Amazon Prime Weekly Streams (GB)', 'Amazon Prime Weekly Streams (Global)', 'Amazon Prime Weekly Streams (Total)',
+          'Amazon Ad Supported Weekly Streams (GB)', 'Amazon Ad Supported Weekly Streams (Global)', 'Amazon Ad Supported Weekly Streams (Total)',
+          'Amazon Unlimited Weekly Streams (GB)', 'Amazon Unlimited Weekly Streams (Global)', 'Amazon Unlimited Weekly Streams (Total)',
+          'YouTube Official Streams (Total)', 'YouTube UGC Streams (Total)'],
+          ['current week', '']], names=['source', 'week'])
 
     daily_flash = pd.DataFrame(columns=columns, index=index)
 
@@ -450,40 +634,6 @@ def add_row_to_daily_flash(data_row, daily_flash, artist, track_title):
     daily_flash = daily_flash.append(pd.DataFrame.from_dict(data_row).unstack().rename(f"{artist_track}"))
 
     return daily_flash
-
-
-def format_num(val, none_as_na=False, prefer_format=None, ignore_pref_if_large=False):
-    try:
-        int(val)
-    except ValueError as ve:
-        return val
-    except TypeError as te:
-        if val is None and none_as_na:
-            return 'N/A'
-        else:
-            print(te)
-    
-    if (prefer_format == 'k') and (ignore_pref_if_large) and (len(str(int(val))) < 7):
-        new_val = round((val / 1e3), 2)
-        return str(new_val) + 'k'
-    elif (prefer_format == 'k') and not ignore_pref_if_large:
-        new_val = round((val / 1e3), 2)
-        return str(new_val) + 'k'
-        
-    elif len(str(val)) > 10:
-        new_val = round((val / 1e9), 2)
-        return str(new_val) + 'bn'
-        
-    elif len(str(val)) > 5:
-        new_val = round((val / 1e6), 2)
-        return str(new_val) + 'm'
-        
-    elif len(str(val)) > 3:
-        new_val = round((val / 1e3), 2)
-        return str(new_val) + 'k'
-        
-    else:
-        return str(val)
 
 
 def daily_flash_to_excel(daily_flash_df, artist_track_dict):
@@ -500,8 +650,11 @@ def daily_flash_to_excel(daily_flash_df, artist_track_dict):
         ws.column_dimensions[get_column_letter(col)].width = 50
 
     # rest of columns spacious tor title
-    for col in range(3,24):
-        ws.column_dimensions[get_column_letter(col)].width = 15
+    for col in range(2,57,2):
+        ws.column_dimensions[get_column_letter(col)].width = 30
+
+    for col in range(3,57,2):
+        ws.column_dimensions[get_column_letter(col)].width = 10
 
     rows = dataframe_to_rows(daily_flash_df, index=True, header=True)
     for r in rows:
@@ -522,13 +675,13 @@ def daily_flash_to_excel(daily_flash_df, artist_track_dict):
     centered = Alignment(horizontal='center', vertical='center')
 
     # no border for cells and center text
-    for col in range(1, 24):
+    for col in range(1, 56):
         for row in range(1,row_len+4):
             ws.cell(row=row,column=col).border = no_border
             ws.cell(row=row,column=col).alignment = centered
 
     # header rows bold
-    for col in range(1, 24):
+    for col in range(1, 56):
         for row in range(1, 3):
             ws.cell(row=row, column=col).font = font
 
@@ -552,7 +705,7 @@ def daily_flash_to_excel(daily_flash_df, artist_track_dict):
                     sheet.cell(row=row, column=col).fill = red_fill
 
 
-    # Youtube Exception colours reversed +changes good.
+    # Youtube & other DSPs streams colours reversed +changes good.
     for col in range(10, 11):
         for row in range(1, 4+row_len):
             if type(sheet.cell(row=row, column=col).value) == int:
@@ -564,6 +717,42 @@ def daily_flash_to_excel(daily_flash_df, artist_track_dict):
                     pass
                 elif sheet.cell(row=row, column=col).value == 'N/A':
                     pass
+
+    # Youtube & other DSPs streams colours reversed +changes good.
+    for col in range(22, 56, 2):
+        for row in range(1, 4+row_len):
+            if type(sheet.cell(row=row, column=col).value) == int:
+                if sheet.cell(row=row, column=col+1).value < 0:
+                    sheet.cell(row=row, column=col).fill = red_fill
+                elif sheet.cell(row=row, column=col+1).value > 0:
+                    sheet.cell(row=row, column=col).fill = green_fill
+                elif sheet.cell(row=row, column=col).value == 0:
+                    pass
+                elif sheet.cell(row=row, column=col).value == 'N/A':
+                    pass
+    
+    #Add percentage change to streaming figs
+    for col in range(10,11):
+        for row in range(4, 17):
+            z = sheet.cell(row=row, column=col+1)
+            a = sheet.cell(row=row, column=col).coordinate
+            b = sheet.cell(row=row, column=col+1).value
+            n = f'=ROUND(IF({b}<0,({a}-({a}-{b}))/({a}-({b}))*100,(({b}/({a}-{b}))*100)),0)&CHAR(37)'
+            z.value = n
+
+    #Add percentage change to streaming figs
+    for col in range(22, 56, 2):
+        for row in range(4, 17):
+            z = sheet.cell(row=row, column=col+1)
+            a = sheet.cell(row=row, column=col).coordinate
+            b = sheet.cell(row=row, column=col+1).value
+            n = f'=ROUND(IF({b}<0,({a}-({a}-{b}))/({a}-({b}))*100,(({b}/({a}-{b}))*100)),0)&CHAR(37)'
+            z.value = n
+
+    #delete j column (youtube original), fix until new youtube query is deleted and code rearranged.
+    sheet.delete_cols(idx=10)
+    
+                    
 
 
 
