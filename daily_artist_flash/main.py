@@ -4,6 +4,7 @@ from utils.queries import select_queries
 from dotenv import load_dotenv
 from datetime import datetime, timedelta, date
 
+""" Always run on a Monday"""
 
 def main():
     # load environment variables
@@ -30,30 +31,15 @@ def main():
         'Anne-Marie & Niall Horan': 'Our Song'
     }
 
-
-    # confirm latest ingest date by getting max date from 'Hot Hits Query'
-    # date_run = datetime.now().date()
-    # # create dates for queries
-    # week = date_run
-    # week = str(week)
-    # week = date.fromisoformat(week)
-    # wk = str(week)
-    # print(wk)
-
-    # delta = timedelta(weeks=1)
-    # week_prior = str(week - delta)
-    
-
     # iterate through utility functions and collect data
     for k, v in artist_track_dict.items():
-        print(k, v)
         selected_queries = select_queries(k, v)
         query_dfs = get_query_dfs(selected_queries, cursor)
         data_rows = create_row(query_dfs)
         data_row = data_row_dict(data_rows)
         daily_flash = add_row_to_daily_flash(data_row, daily_flash, k, v)
 
-    #print(daily_flash)
+    
     # creates excel
     daily_flash_to_excel(daily_flash, artist_track_dict)
 

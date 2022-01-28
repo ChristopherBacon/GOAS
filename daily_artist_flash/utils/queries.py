@@ -327,9 +327,9 @@ def select_queries(artist, track_title):
            spotify_top_200_global, apple_music_daily_top_100_gb, shazam_top_200_gb, shazam_top_200_ww, occ_top_100_singles, dsp_streams, \
             youtube_ugc_pgc
 
-#Appears to be a 2 day lag on all dates.
+# appears to be a 2 day lag on all dates.
 
-
+# the below determine max dates of data ingest in playlists that are used to work current date back to populated fields.
     
 fact_audio_playlist_track_metrics_latest_ingest = """
 

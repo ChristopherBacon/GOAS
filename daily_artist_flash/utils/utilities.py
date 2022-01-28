@@ -751,10 +751,6 @@ def daily_flash_to_excel(daily_flash_df, artist_track_dict):
 
     #delete j column (youtube original), fix until new youtube query is deleted and code rearranged.
     sheet.delete_cols(idx=10)
-    
-                    
-
-
 
     
     title = f"daily_flash_{week}.xlsx"
